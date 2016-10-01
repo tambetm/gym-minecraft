@@ -1,26 +1,15 @@
 import logging
 import time
 import os
-
 # import multiprocessing
 
 import numpy as np
-
 import gym
-from gym import spaces, error
-# from gym.utils import seeding
-
+import gym.spaces
 import MalmoPython
 
-'''
-try:
-    import MalmoPython
-except ImportError as e:
-    raise gym.error.DependencyNotInstalled("{}. (HINT: your PYTHONPATH should include MalmoPython.so.)'".format(e))
-'''
-
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
 
 '''
 # Singleton pattern
@@ -89,7 +78,7 @@ class MinecraftEnv(gym.Env):
         video_height = self.mission_spec.getVideoHeight(0)
         video_width = self.mission_spec.getVideoWidth(0)
         video_depth = self.mission_spec.getVideoChannels(0)
-        self.observation_space = spaces.Box(low=0, high=255, 
+        self.observation_space = gym.spaces.Box(low=0, high=255,
                 shape=(video_depth, video_width, video_height))
 
         self._create_action_space()
@@ -136,20 +125,20 @@ class MinecraftEnv(gym.Env):
         self.action_names = []
         self.action_spaces = []
         if len(discrete_actions) > 0:
-            self.action_spaces.append(spaces.Discrete(len(discrete_actions)))
+            self.action_spaces.append(gym.spaces.Discrete(len(discrete_actions)))
             self.action_names.append(discrete_actions)
         if len(continuous_actions) > 0:
-            self.action_spaces.append(spaces.Box(-1, 1, (len(continuous_actions),)))
+            self.action_spaces.append(gym.spaces.Box(-1, 1, (len(continuous_actions),)))
             self.action_names.append(continuous_actions)
         if len(multidiscrete_actions) > 0:
-            self.action_spaces.append(spaces.MultiDiscrete(multidiscrete_action_ranges))
+            self.action_spaces.append(gym.spaces.MultiDiscrete(multidiscrete_action_ranges))
             self.action_names.append(multidiscrete_actions)
 
         # if there is only one action space, don't wrap it in Tuple
         if len(self.action_spaces) == 1:
             self.action_space = self.action_spaces[0]
         else:
-            self.action_space = spaces.Tuple(self.action_spaces)
+            self.action_space = gym.spaces.Tuple(self.action_spaces)
         logger.debug(self.action_space)
 
     def _reset(self):
@@ -185,37 +174,51 @@ class MinecraftEnv(gym.Env):
 
         # send appropriate command for different actions
         for asp, cmds, acts in zip(self.action_spaces, self.action_names, actions):
-            if isinstance(asp, spaces.Discrete):
+            if isinstance(asp, gym.spaces.Discrete):
                 logger.debug(cmds[acts] + " 1")
                 self.agent_host.sendCommand(cmds[acts] + " 1")
-            elif isinstance(asp, spaces.Box):
+            elif isinstance(asp, gym.spaces.Box):
                 for cmd, val in zip(cmds, acts):
                     logger.debug(cmd + " " + str(val))
                     self.agent_host.sendCommand(cmd + " " + str(val))
-            elif isinstance(asp, spaces.MultiDiscrete):
+            elif isinstance(asp, gym.spaces.MultiDiscrete):
                 for cmd, val in zip(cmds, acts):
                     logger.debug(cmd + " " + str(val))
                     self.agent_host.sendCommand(cmd + " " + str(val))
 
-    def _get_state(self):
-        reward = 0
+    def _get_world_state(self):
+        # wait till we have got at least one video frame or mission has ended
         while True:
-            time.sleep(0.01)  # TODO: how long this should be?
-            world_state = self.agent_host.getWorldState()
-            for error in world_state.errors:
-                logger.warn(error.text)
-            for msg in world_state.mission_control_messages:
-                logger.info(msg.text)
-            for r in world_state.rewards:
-                reward += r.getValue()
-            # if got at least video frame and mission hasn't ended
+            time.sleep(1)  # TODO: how long this should be?
+            world_state = self.agent_host.peekWorldState()
             if len(world_state.video_frames) > 0 or not world_state.is_mission_running:
                 break
 
+        return self.agent_host.getWorldState()
+
+    def _step(self, action):
+        # take the action if mission is still running
+        world_state = self.agent_host.peekWorldState()
+        if world_state.is_mission_running:
+            # take action
+            self._take_action(action)
+        # wait for the new state
+        world_state = self._get_world_state()
+
+        # log errors and control messages
+        for error in world_state.errors:
+            logger.warn(error.text)
+        for msg in world_state.mission_control_messages:
+            logger.info(msg.text)
+
+        # sum rewards (actually there can be only one)
+        reward = 0
+        for r in world_state.rewards:
+            reward += r.getValue()
+
+        # process the video frame
         if len(world_state.video_frames) > 0:
             assert len(world_state.video_frames) == 1
-            # assert len(world_state.rewards) == 1
-            # assert len(world_state.observations) == 1
             frame = world_state.video_frames[0]
             image = np.frombuffer(frame.pixels, dtype=np.uint8)
             image = image.reshape((frame.height, frame.width, frame.channels))
@@ -226,8 +229,10 @@ class MinecraftEnv(gym.Env):
             # then just use the last frame, it doesn't matter much anyway
             image = self.last_image
 
+        # detect terminal state
         done = not world_state.is_mission_running
 
+        # other auxiliary data
         info = {}
         info['has_mission_begun'] = world_state.has_mission_begun
         info['is_mission_running'] = world_state.is_mission_running
@@ -236,15 +241,6 @@ class MinecraftEnv(gym.Env):
         info['number_of_observations_since_last_state'] = world_state.number_of_observations_since_last_state
 
         return image, reward, done, info
-
-    def _step(self, action):
-        # you shouldn't call step() when previous step returned done=True
-        world_state = self.agent_host.peekWorldState()
-        assert world_state.is_mission_running, "You shouldn't call step() when previous step returned done=True."
-
-        # take action and return new state
-        self._take_action(action)
-        return self._get_state()
 
     def _render(self, mode='human', close=False):
         if mode == 'rgb_array':

@@ -20,6 +20,7 @@ except ImportError as e:
 '''
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 '''
 # Singleton pattern
@@ -48,8 +49,6 @@ class MinecraftEnv(gym.Env):
         mission_xml = open(mission_file, 'r').read()
         self.mission_spec = MalmoPython.MissionSpec(mission_xml, True)
 
-        self._configure()
-
     def _configure(self, videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
                    observeFullInventory=None, observeGrid=None,
@@ -77,17 +76,11 @@ class MinecraftEnv(gym.Env):
             self.mission_spec.observeChat()
 
         if allowContinuousMovement:
-            self.mission_spec.allowContinuousMovement()
+            self.mission_spec.allowAllContinuousMovementCommands()
         if allowDiscreteMovement:
-            self.mission_spec.allowDiscreteMovement()
+            self.mission_spec.allowAllDiscreteMovementCommands()
         if allowAbsoluteMovement:
-            self.mission_spec.allowAbsoluteMovement()
-
-        chs = self.mission_spec.getListOfCommandHandlers(0)
-        logger.debug(chs)
-        for ch in chs:
-            cmds = self.mission_spec.getAllowedCommands(0, ch)
-            logger.debug(ch+':'+str(cmds))
+            self.mission_spec.allowAllAbsoluteMovementCommands()
 
         # TODO: produce observation and action spaces dynamically based on
         # requested features
@@ -97,10 +90,58 @@ class MinecraftEnv(gym.Env):
         video_depth = self.mission_spec.getVideoChannels(0)
         self.observation_space = spaces.Box(low=0, high=255, 
                 shape=(video_depth, video_width, video_height))
-        self.action_space = spaces.Box(low=-1, high=1, shape=(2,))  # move and turn
+
+        self._create_action_space()
 
         # TODO: allow configuration of MissionRecordSpec
         self.mission_record_spec = MalmoPython.MissionRecordSpec()  # record nothing
+
+    def _create_action_space(self):
+        continuous_actions = []
+        discrete_actions = []
+        multidiscrete_actions = []
+        multidiscrete_action_ranges = []
+        chs = self.mission_spec.getListOfCommandHandlers(0)
+        for ch in chs:
+            cmds = self.mission_spec.getAllowedCommands(0, ch)
+            for cmd in cmds:
+                logger.debug(ch + ":" + cmd)
+                if ch == "ContinuousMovement":
+                    if cmd in ["move", "strafe", "pitch", "turn"]:
+                        continuous_actions.append(cmd)
+                    elif cmd in ["crouch", "jump", "attack", "use"]:
+                        multidiscrete_actions.append(cmd)
+                        multidiscrete_action_ranges.append([0, 1])
+                    else:
+                        assert False, "Unknown continuous action " + cmd
+                elif ch == "DiscreteMovement":
+                    if cmd in ["movenorth", "moveeast", "movesouth", "movewest"]:
+                        discrete_actions.append(cmd)
+                    elif cmd in ["move", "turn", "look"]:
+                        multidiscrete_actions.append(cmd)
+                        multidiscrete_action_ranges.append([-1, 1])
+                    elif cmd in ["jump", "attack", "use"]:
+                        if cmd not in discrete_actions:
+                            multidiscrete_actions.append(cmd)
+                            multidiscrete_action_ranges.append([0, 1])
+                    else:
+                        assert False, "Unknown discrete action " + cmd
+                else:
+                    assert False, "Unknown commandhandler " + ch
+
+        self.action_names = []
+        self.action_spaces = []
+        if len(discrete_actions) > 0:
+            self.action_spaces.append(spaces.Discrete(len(discrete_actions)))
+            self.action_names.append(discrete_actions)
+        if len(continuous_actions) > 0:
+            self.action_spaces.append(spaces.Box(-1, 1, (len(continuous_actions),)))
+            self.action_names.append(continuous_actions)
+        if len(multidiscrete_actions) > 0:
+            self.action_spaces.append(spaces.MultiDiscrete(multidiscrete_action_ranges))
+            self.action_names.append(multidiscrete_actions)
+        self.action_space = spaces.Tuple(self.action_spaces)
+        logger.debug(self.action_space)
 
     def _reset(self):
         # Attempt to start a mission
@@ -128,19 +169,24 @@ class MinecraftEnv(gym.Env):
 
         logger.info("Mission running")
 
-    def _step(self, action):
-        assert action.shape == (2,)
-        assert np.all(-1 <= action)
-        assert np.all(action <= 1)
-
+    def _step(self, actions):
         world_state = self.agent_host.peekWorldState()
         assert world_state.is_mission_running
 
         try:
-            # TODO: support other commands besides these two
-            self.agent_host.sendCommand("move "+str(action[0]))
-            self.agent_host.sendCommand("turn "+str(action[1]))
-            time.sleep(0.05)  # TODO: how long this should be?
+            for asp, cmds, acts in zip(self.action_spaces, self.action_names, actions):
+                if isinstance(asp, spaces.Discrete):
+                    logger.debug(cmds[acts] + " 1")
+                    self.agent_host.sendCommand(cmds[acts] + " 1")
+                elif isinstance(asp, spaces.Box):
+                    for cmd, val in zip(cmds, acts):
+                        logger.debug(cmd + " " + str(val))
+                        self.agent_host.sendCommand(cmd + " " + str(val))
+                elif isinstance(asp, spaces.MultiDiscrete):
+                    for cmd, val in zip(cmds, acts):
+                        logger.debug(cmd + " " + str(val))
+                        self.agent_host.sendCommand(cmd + " " + str(val))
+            time.sleep(0.1)  # TODO: how long this should be?
             world_state = self.agent_host.getWorldState()
             for error in world_state.errors:
                 logger.warn(error.text)
@@ -167,7 +213,7 @@ class MinecraftEnv(gym.Env):
             info['number_of_rewards_since_last_state'] = world_state.number_of_rewards_since_last_state
             info['number_of_observations_since_last_state'] = world_state.number_of_observations_since_last_state
 
-            logger.debug(image)
+            #logger.debug(image)
             self.last_image = image
             # TODO: return other observations besides video frame
             return image, reward, done, info
@@ -183,8 +229,10 @@ class MinecraftEnv(gym.Env):
             if close:
                 cv2.destroyAllWindows()
             else:
-                cv2.imshow('render', self.last_image[...,::-1])  # OpenCV expects images in BGR
-                cv2.waitKey(1)
+                # OpenCV expects images in BGR
+                image = self.last_image[..., ::-1]
+                cv2.imshow('render', image)
+                cv2.waitKey(1)  # wait 1 ms
         else:
             assert False, "Unknown render mode " + mode
 

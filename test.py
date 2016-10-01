@@ -3,6 +3,7 @@ import gym_pull
 import tambetm_gym_minecraft
 
 env = gym.make('tambetm/MinecraftBasic-v0')
+#env.configure(allowDiscreteMovement=True)
 
 for _ in xrange(2):
     env.reset()
@@ -10,7 +11,7 @@ for _ in xrange(2):
     while not done:
         obs, reward, done, info = env.step(env.action_space.sample())
         env.render()
-        print "obs:", obs.shape
-        print "reward:", reward
-        print "done:", done
-        print "info", info
+        #print "obs:", obs.shape
+        #print "reward:", reward
+        #print "done:", done
+        #print "info", info

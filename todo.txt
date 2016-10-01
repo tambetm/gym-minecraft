@@ -1,7 +1,6 @@
-- produce observation and action spaces automatically based on requested (or default) features
+- produce observation spaces automatically based on requested (or default) features
 - add other missions
 - allow configuration of MissionRecordSpec
-- figure out the stability issues - how long to wait video for frames and observations
 - start Minecraft process automatically (and shut down in close())
 - package Minecraft as minecraft_py
 - run preliminary models

@@ -48,6 +48,7 @@ class MinecraftEnv(gym.Env):
         logger.info("Loading mission from " + mission_file)
         mission_xml = open(mission_file, 'r').read()
         self.mission_spec = MalmoPython.MissionSpec(mission_xml, True)
+        logger.info("Loaded mission: " + self.mission_spec.getSummary())
 
     def _configure(self, videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
@@ -82,7 +83,7 @@ class MinecraftEnv(gym.Env):
         if allowAbsoluteMovement:
             self.mission_spec.allowAllAbsoluteMovementCommands()
 
-        # TODO: produce observation and action spaces dynamically based on
+        # TODO: produce observation space dynamically based on
         # requested features
 
         video_height = self.mission_spec.getVideoHeight(0)
@@ -97,6 +98,7 @@ class MinecraftEnv(gym.Env):
         self.mission_record_spec = MalmoPython.MissionRecordSpec()  # record nothing
 
     def _create_action_space(self):
+        # collect different actions based on allowed commands
         continuous_actions = []
         discrete_actions = []
         multidiscrete_actions = []
@@ -126,9 +128,11 @@ class MinecraftEnv(gym.Env):
                             multidiscrete_action_ranges.append([0, 1])
                     else:
                         assert False, "Unknown discrete action " + cmd
+                # TODO: support for AbsoluteMovement
                 else:
                     assert False, "Unknown commandhandler " + ch
 
+        # turn action lists into action spaces
         self.action_names = []
         self.action_spaces = []
         if len(discrete_actions) > 0:
@@ -140,7 +144,12 @@ class MinecraftEnv(gym.Env):
         if len(multidiscrete_actions) > 0:
             self.action_spaces.append(spaces.MultiDiscrete(multidiscrete_action_ranges))
             self.action_names.append(multidiscrete_actions)
-        self.action_space = spaces.Tuple(self.action_spaces)
+
+        # if there is only one action space, don't wrap it in Tuple
+        if len(self.action_spaces) == 1:
+            self.action_space = self.action_spaces[0]
+        else:
+            self.action_space = spaces.Tuple(self.action_spaces)
         logger.debug(self.action_space)
 
     def _reset(self):
@@ -169,57 +178,73 @@ class MinecraftEnv(gym.Env):
 
         logger.info("Mission running")
 
-    def _step(self, actions):
-        world_state = self.agent_host.peekWorldState()
-        assert world_state.is_mission_running
+    def _take_action(self, actions):
+        # if there is only one action space, it wasn't wrapped in Tuple
+        if len(self.action_spaces) == 1:
+            actions = [actions]
 
-        try:
-            for asp, cmds, acts in zip(self.action_spaces, self.action_names, actions):
-                if isinstance(asp, spaces.Discrete):
-                    logger.debug(cmds[acts] + " 1")
-                    self.agent_host.sendCommand(cmds[acts] + " 1")
-                elif isinstance(asp, spaces.Box):
-                    for cmd, val in zip(cmds, acts):
-                        logger.debug(cmd + " " + str(val))
-                        self.agent_host.sendCommand(cmd + " " + str(val))
-                elif isinstance(asp, spaces.MultiDiscrete):
-                    for cmd, val in zip(cmds, acts):
-                        logger.debug(cmd + " " + str(val))
-                        self.agent_host.sendCommand(cmd + " " + str(val))
-            time.sleep(0.1)  # TODO: how long this should be?
+        # send appropriate command for different actions
+        for asp, cmds, acts in zip(self.action_spaces, self.action_names, actions):
+            if isinstance(asp, spaces.Discrete):
+                logger.debug(cmds[acts] + " 1")
+                self.agent_host.sendCommand(cmds[acts] + " 1")
+            elif isinstance(asp, spaces.Box):
+                for cmd, val in zip(cmds, acts):
+                    logger.debug(cmd + " " + str(val))
+                    self.agent_host.sendCommand(cmd + " " + str(val))
+            elif isinstance(asp, spaces.MultiDiscrete):
+                for cmd, val in zip(cmds, acts):
+                    logger.debug(cmd + " " + str(val))
+                    self.agent_host.sendCommand(cmd + " " + str(val))
+
+    def _get_state(self):
+        reward = 0
+        while True:
+            time.sleep(0.01)  # TODO: how long this should be?
             world_state = self.agent_host.getWorldState()
             for error in world_state.errors:
                 logger.warn(error.text)
-
             for msg in world_state.mission_control_messages:
-                logger.debug(msg)
+                logger.info(msg.text)
+            for r in world_state.rewards:
+                reward += r.getValue()
+            # if got at least video frame and mission hasn't ended
+            if len(world_state.video_frames) > 0 or not world_state.is_mission_running:
+                break
 
+        if len(world_state.video_frames) > 0:
             assert len(world_state.video_frames) == 1
             # assert len(world_state.rewards) == 1
             # assert len(world_state.observations) == 1
             frame = world_state.video_frames[0]
             image = np.frombuffer(frame.pixels, dtype=np.uint8)
-            image = image.reshape((frame.height, frame.width, frame.channels))            
-
-            reward = 0
-            for r in world_state.rewards:
-                reward += r.getValue()
-            done = not world_state.is_mission_running
-
-            info = {}
-            info['has_mission_begun'] = world_state.has_mission_begun
-            info['is_mission_running'] = world_state.is_mission_running
-            info['number_of_video_frames_since_last_state'] = world_state.number_of_video_frames_since_last_state
-            info['number_of_rewards_since_last_state'] = world_state.number_of_rewards_since_last_state
-            info['number_of_observations_since_last_state'] = world_state.number_of_observations_since_last_state
-
+            image = image.reshape((frame.height, frame.width, frame.channels))
             #logger.debug(image)
             self.last_image = image
-            # TODO: return other observations besides video frame
-            return image, reward, done, info
+        else:
+            # can happen only when mission ends before we get frame
+            # then just use the last frame, it doesn't matter much anyway
+            image = self.last_image
 
-        except RuntimeError as e:
-            logger.warn("Failed to send command: " + str(e))
+        done = not world_state.is_mission_running
+
+        info = {}
+        info['has_mission_begun'] = world_state.has_mission_begun
+        info['is_mission_running'] = world_state.is_mission_running
+        info['number_of_video_frames_since_last_state'] = world_state.number_of_video_frames_since_last_state
+        info['number_of_rewards_since_last_state'] = world_state.number_of_rewards_since_last_state
+        info['number_of_observations_since_last_state'] = world_state.number_of_observations_since_last_state
+
+        return image, reward, done, info
+
+    def _step(self, action):
+        # you shouldn't call step() when previous step returned done=True
+        world_state = self.agent_host.peekWorldState()
+        assert world_state.is_mission_running, "You shouldn't call step() when previous step returned done=True."
+
+        # take action and return new state
+        self._take_action(action)
+        return self._get_state()
 
     def _render(self, mode='human', close=False):
         if mode == 'rgb_array':
@@ -232,7 +257,7 @@ class MinecraftEnv(gym.Env):
                 # OpenCV expects images in BGR
                 image = self.last_image[..., ::-1]
                 cv2.imshow('render', image)
-                cv2.waitKey(1)  # wait 1 ms
+                cv2.waitKey(1)  # wait the smallest amount possible - 1ms
         else:
             assert False, "Unknown render mode " + mode
 

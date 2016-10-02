@@ -85,7 +85,9 @@ class MinecraftEnv(gym.Env):
         video_width = self.mission_spec.getVideoWidth(0)
         video_depth = self.mission_spec.getVideoChannels(0)
         self.observation_space = gym.spaces.Box(low=0, high=255,
-                shape=(video_depth, video_width, video_height))
+                shape=(video_height, video_width, video_depth))
+        # dummy image just for the first observation
+        self.last_image = np.zeros((video_height, video_width, video_depth))
 
         self._create_action_space()
 
@@ -169,6 +171,7 @@ class MinecraftEnv(gym.Env):
                 logger.warn(error.text)
 
         logger.info("Mission running")
+        return self._get_observation(world_state)
 
     def _take_action(self, actions):
         # if there is only one action space, it wasn't wrapped in Tuple
@@ -199,6 +202,22 @@ class MinecraftEnv(gym.Env):
 
         return self.agent_host.getWorldState()
 
+    def _get_observation(self, world_state):
+        # process the video frame
+        if len(world_state.video_frames) > 0:
+            assert len(world_state.video_frames) == 1
+            frame = world_state.video_frames[0]
+            image = np.frombuffer(frame.pixels, dtype=np.uint8)
+            image = image.reshape((frame.height, frame.width, frame.channels))
+            #logger.debug(image)
+            self.last_image = image
+        else:
+            # can happen only when mission ends before we get frame
+            # then just use the last frame, it doesn't matter much anyway
+            image = self.last_image
+
+        return image
+
     def _step(self, action):
         # take the action only if mission is still running
         world_state = self.agent_host.peekWorldState()
@@ -219,18 +238,8 @@ class MinecraftEnv(gym.Env):
         for r in world_state.rewards:
             reward += r.getValue()
 
-        # process the video frame
-        if len(world_state.video_frames) > 0:
-            assert len(world_state.video_frames) == 1
-            frame = world_state.video_frames[0]
-            image = np.frombuffer(frame.pixels, dtype=np.uint8)
-            image = image.reshape((frame.height, frame.width, frame.channels))
-            #logger.debug(image)
-            self.last_image = image
-        else:
-            # can happen only when mission ends before we get frame
-            # then just use the last frame, it doesn't matter much anyway
-            image = self.last_image
+        # take last frame from world state
+        image = self._get_observation(world_state)
 
         # detect terminal state
         done = not world_state.is_mission_running

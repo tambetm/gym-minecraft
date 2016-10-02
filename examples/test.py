@@ -1,11 +1,10 @@
-import sys
 import gym
 import gym_minecraft
 import time
 
-env = gym.make(sys.argv[1])
+env = gym.make('MinecraftBasic-v0')
 #env.configure(allowContinuousMovement=["move", "turn"])
-env.configure(allowDiscreteMovement=["move", "turn"], log_level="WARN")
+env.configure(allowDiscreteMovement=["move", "turn"], log_level="INFO")
 #env.configure(videoResolution=[160, 120])
 #env.monitor.start("gym_random")
 

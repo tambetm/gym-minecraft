@@ -20,6 +20,8 @@ export PYTHONPATH=$PYTHONPATH:$HOME/Malmo/Python_Examples
 
 You can put the last two lines in your `~/.bashrc`.
 
+Also for rendering the game screen in human mode OpenCV (`cv2`) is needed. Installation of that is Python distribution specific, for example in Ubuntu `sudo apt-get install python-opencv`, in Anaconda `conda install opencv` and so on.
+
 ## Installation
 
 ```shell
@@ -111,10 +113,11 @@ Following optimizations help to run the training process faster:
   </ModSettings>
 ```
 
-3. You can play with `MsPerTick` parameter, which basically determines how fast you can get new observations from the game. Default is 50ms per tick, which means 20 observations per second. You can lower it to 25ms, 10ms or even 1ms. But beware that the bottleneck might be your training process - can it really handle more than 20 observations per second? Otherwise you would be wasting observations and moving forward in time in bigger steps (which might actually be good thing in some contexts).
+3. You can play with `MsPerTick` parameter, which basically determines how fast you can get new observations from the game. Default is 50ms per tick, which means 20 observations per second. You can lower it to 25ms, 10ms or even 1ms. 
 
   ```xml
   <ModSettings>
       <MsPerTick>10</MsPerTick>
   </ModSettings>
 ```
+But beware that the bottleneck might be your training process - can it really handle more than 20 observations per second? Otherwise you would be wasting observations and moving forward in time in bigger steps (which might actually be good thing in some contexts). Also the timeout in missions still counts each tick as 50ms, so actually your missions time out faster.

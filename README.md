@@ -8,9 +8,15 @@ Gym Minecraft is an environment bundle for OpenAI Gym. It is based on [Microsoft
 
 2. Download and unpack [the latest pre-built version for your OS](https://github.com/Microsoft/malmo/releases).
 
-3. Set `MALMO_XSD_PATH` to the location of schemas, i.e. `export MALMO_XSD_PATH=$HOME/Malmo/Schemas`.
+3. Set `MALMO_XSD_PATH` to the location of schemas, i.e. 
+  ```shell
+export MALMO_XSD_PATH=$HOME/Malmo/Schemas
+```
 
-4. Set `PYTHONPATH` to the location of `MalmoPython.so`, i.e. `export PYTHONPATH=$PYTHONPATH:$HOME/Malmo/Python_Examples`. 
+4. Set `PYTHONPATH` to the location of `MalmoPython.so`, i.e.
+  ```shell
+export PYTHONPATH=$PYTHONPATH:$HOME/Malmo/Python_Examples
+```
 
 You can put the last two lines in your `~/.bashrc`.
 
@@ -33,11 +39,11 @@ You can leave Minecraft running for entire duration of your experiments. You als
 
 2. Run environment:
 
-```python
+  ```python
 import gym
 import gym_minecraft
 
-env = gym.make('tambetm/MinecraftBasic-v0')
+env = gym.make('MinecraftBasic-v0')
 ...
 ```
 
@@ -46,23 +52,23 @@ See `examples` folder for sample scripts.
 ## Environments
 
 Environments included:
-- tambetm/MinecraftDefaultWorld1-v0
-- tambetm/MinecraftDefaultFlat1-v0
-- tambetm/MinecraftTrickyArena1-v0
-- tambetm/MinecraftEating1-v0
-- tambetm/MinecraftCliffWalking1-v0
-- tambetm/MinecraftMaze1-v0
-- tambetm/MinecraftMaze2-v0
-- tambetm/MinecraftBasic-v0
-- tambetm/MinecraftObstacles-v0
-- tambetm/MinecraftSimpleRoomMaze-v0
-- tambetm/MinecraftAttic-v0
-- tambetm/MinecraftVertical-v0
-- tambetm/MinecraftComplexityUsage-v0
-- tambetm/MinecraftMedium-v0
-- tambetm/MinecraftHard-v0
+- MinecraftDefaultWorld1-v0
+- MinecraftDefaultFlat1-v0
+- MinecraftTrickyArena1-v0
+- MinecraftEating1-v0
+- MinecraftCliffWalking1-v0
+- MinecraftMaze1-v0
+- MinecraftMaze2-v0
+- MinecraftBasic-v0
+- MinecraftObstacles-v0
+- MinecraftSimpleRoomMaze-v0
+- MinecraftAttic-v0
+- MinecraftVertical-v0
+- MinecraftComplexityUsage-v0
+- MinecraftMedium-v0
+- MinecraftHard-v0
 
-Basically I used [original Malmö missions](https://github.com/Microsoft/malmo/raw/master/sample_missions/MalmoMissionTable_CurrentTasks_2016_06_14.pdf) intact, only added `<PrioritiseOffscreenRendering>` tag to speed up training.
+Basically these are [original Malmö missions](https://github.com/Microsoft/malmo/raw/master/sample_missions/MalmoMissionTable_CurrentTasks_2016_06_14.pdf) with only `<PrioritiseOffscreenRendering>` added to speed up training.
 
 ## Overriding default settings
 
@@ -93,17 +99,21 @@ More documentation about configuration options is coming, meanwhile refer to the
 
 ## Tuning the speed
 
-Following optimizations help to run training process faster: 
+Following optimizations help to run the training process faster: 
 
 1. Turn up the framerate: in Minecraft go to `Options...`, `Video Settings...` and set `Max Framerate: Unlimited`.
+
 2. Make sure you have offscreen rendering enabled in mission XML file (should be for default missions).
- ```xml
+
+  ```xml
   <ModSettings>
       <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
   </ModSettings>
 ```
+
 3. You can play with `MsPerTick` parameter, which basically determines how fast you can get new observations from the game. Default is 50ms per tick, which means 20 observations per second. You can lower it to 25ms, 10ms or even 1ms. But beware that the bottleneck might be your training process - can it really handle more than 20 observations per second? Otherwise you would be wasting observations and moving forward in time in bigger steps (which might actually be good thing in some contexts).
- ```xml
+
+  ```xml
   <ModSettings>
       <MsPerTick>10</MsPerTick>
   </ModSettings>

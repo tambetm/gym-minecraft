@@ -1,46 +1,47 @@
-# gym-minecraft
+# Gym Minecraft
 
-Gym Minecraft is an environment bundle for OpenAI Gym
+Gym Minecraft is an environment bundle for OpenAI Gym. It is based on [Microsoft's Malmö](https://github.com/Microsoft/malmo), which is a platform for Artificial Intelligence experimentation and research built on top of Minecraft.
 
 ## Prerequisites
-
-First you need [Microsoft's Malmö](https://github.com/Microsoft/malmo), which is a platform for Artificial Intelligence experimentation and research built on top of Minecraft.
 
 1. Install the dependencies for your OS: [Windows](https://github.com/Microsoft/malmo/blob/master/doc/install_windows.md), [Linux](https://github.com/Microsoft/malmo/blob/master/doc/install_linux.md), [MacOSX](https://github.com/Microsoft/malmo/blob/master/doc/install_macosx.md). You can skip Torch, Mono and ALE parts.
 
 2. Download and unpack [the latest pre-built version for your OS](https://github.com/Microsoft/malmo/releases).
 
-3. Set MALMO_XSD_PATH to the location of schemas, i.e. `export MALMO_XSD_PATH=$HOME/Malmo/Schemas`. Put this in your `~/.bashrc`.
+3. Set `MALMO_XSD_PATH` to the location of schemas, i.e. `export MALMO_XSD_PATH=$HOME/Malmo/Schemas`.
 
-4. Set PYTHONPATH to the location of MalmoPython.so, i.e. `export PYTHONPATH=$PYTHONPATH:$HOME/Malmo/Python_Examples`. Put this also in your `~/.bashrc`.
+4. Set `PYTHONPATH` to the location of `MalmoPython.so`, i.e. `export PYTHONPATH=$PYTHONPATH:$HOME/Malmo/Python_Examples`. 
 
-5. Launch Minecraft:
+You can put the last two lines in your `~/.bashrc`.
+
+## Installation
+
+```shell
+git clone https://github.com/tambetm/gym-minecraft.git
+cd gym-minecraft
+pip install -e .
+```
+
+## Running
+
+1. Launch Minecraft:
   ```shell
 cd ~/Malmo/Minecraft
 ./launchClient.sh
 ```
 You can leave Minecraft running for entire duration of your experiments. You also do not need to be in special menu in Minecraft, the Malmo mod switches the game mode automatically when it needs to.
 
-6. Optional: in Minecraft go to Options..., Video Settings... and set Max Framerate: Unlimited. This allows to train faster.
-
-## Installation
-
-You need to install [gym-pull](https://github.com/ppaquette/gym-pull)
-
-```shell
-pip install gym-pull
-```
-
- To load and run the environments, run
+2. Run environment:
 
 ```python
 import gym
-import gym_pull
-gym_pull.pull('github.com/tambetm/gym-minecraft')        # Only required once, envs will be loaded with import gym_pull afterwards
+import gym_minecraft
+
 env = gym.make('tambetm/MinecraftBasic-v0')
+...
 ```
 
-See test folder for some example scripts.
+See `examples` folder for sample scripts.
 
 ## Environments
 
@@ -61,31 +62,49 @@ Environments included:
 - tambetm/MinecraftMedium-v0
 - tambetm/MinecraftHard-v0
 
-Basically I used original Malmö missions intact, only added `<PrioritiseOffscreenRendering>` tag to speed up training.
+Basically I used [original Malmö missions](https://github.com/Microsoft/malmo/raw/master/sample_missions/MalmoMissionTable_CurrentTasks_2016_06_14.pdf) intact, only added `<PrioritiseOffscreenRendering>` tag to speed up training.
 
 ## Overriding default settings
 
-The default settings for environments might not be optimal for you. Luckily you can easily override them using configure().
+The default settings for environments might not be optimal for you. Luckily you can easily override them using `configure()`.
 
 For example to use discrete actions instead of continuous actions:
 
 ```python
-env = gym.make('tambetm/MinecraftBasic-v0')
+env = gym.make('MinecraftBasic-v0')
 env.configure(allowDiscreteMovement=["move", "turn"])
 ```
 
 To use continuous actions instead of discrete actions:
 
 ```python
-env = gym.make('tambetm/MinecraftBasic-v0')
+env = gym.make('MinecraftBasic-v0')
 env.configure(allowContinuousMovement=["move", "turn"])
 ```
 
 To use different video resolution:
 
 ```python
-env = gym.make('tambetm/MinecraftBasic-v0')
+env = gym.make('MinecraftBasic-v0')
 env.configure(videoResolution=[40, 30])
 ```
 
 More documentation about configuration options is coming, meanwhile refer to the source code.
+
+## Tuning the speed
+
+Following optimizations help to run training process faster: 
+
+1. Turn up the framerate: in Minecraft go to `Options...`, `Video Settings...` and set `Max Framerate: Unlimited`.
+2. Make sure you have offscreen rendering enabled in mission XML file (should be for default missions).
+ ```xml
+  <ModSettings>
+      <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
+  </ModSettings>
+```
+3. You can play with `MsPerTick` parameter, which basically determines how fast you can get new observations from the game. Default is 50ms per tick, which means 20 observations per second. You can lower it to 25ms, 10ms or even 1ms. But beware that the bottleneck might be your training process - can it really handle more than 20 observations per second? Otherwise you would be wasting observations and moving forward in time in bigger steps (which might actually be good thing in some contexts).
+ ```xml
+  <ModSettings>
+      <MsPerTick>10</MsPerTick>
+  </ModSettings>
+```

@@ -1,7 +1,6 @@
 import argparse
 import gym
-import gym_pull
-import tambetm_gym_minecraft
+import gym_minecraft
 from gym.spaces import Box, Discrete
 from keras.models import Model
 from keras.layers import Input, Permute, Convolution2D, Flatten, Dense, Lambda
@@ -14,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--hidden_size', type=int, default=100)
 parser.add_argument('--layers', type=int, default=1)
-parser.add_argument('--train_repeat', type=int, default=10)
+parser.add_argument('--train_repeat', type=int, default=4)
 parser.add_argument('--gamma', type=float, default=0.99)
 parser.add_argument('--tau', type=float, default=0.001)
 parser.add_argument('--episodes', type=int, default=1000)
@@ -104,6 +103,7 @@ for i_episode in xrange(args.episodes):
 
         prev_observation = observation
         observation, reward, done, info = env.step(action)
+        #print info
         episode_reward += reward
         #print "reward:", reward
         mem.add(prev_observation, np.array([action]), reward, observation, done)

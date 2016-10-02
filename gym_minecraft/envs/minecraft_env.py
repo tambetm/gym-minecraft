@@ -3,12 +3,16 @@ import time
 import os
 
 import numpy as np
+import json
 import gym
-import gym.spaces
-import MalmoPython
+from gym import spaces
+
+try:
+    import MalmoPython
+except ImportError as e:
+    raise gym.error.DependencyNotInstalled("{}. (HINT: include MalmoPython.so in your PYTHONPATH".format(e))
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG)
 
 
 class MinecraftEnv(gym.Env):
@@ -20,23 +24,26 @@ class MinecraftEnv(gym.Env):
         # TODO: start Minecraft process?
 
         self.agent_host = MalmoPython.AgentHost()
-        assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets')
+        assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets')
         mission_file = os.path.join(assets_dir, mission_file)
         logger.info("Loading mission from " + mission_file)
         mission_xml = open(mission_file, 'r').read()
         self.mission_spec = MalmoPython.MissionSpec(mission_xml, True)
         logger.info("Loaded mission: " + self.mission_spec.getSummary())
 
-    def _configure(self, max_retries=3, step_sleep=0,
+    def _configure(self, max_retries=3, step_sleep=0, log_level=logging.INFO,
                    videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
                    observeFullInventory=None, observeGrid=None,
                    observeDistance=None, observeChat=None,
                    allowContinuousMovement=None, allowDiscreteMovement=None,
-                   allowAbsoluteMovement=None):
+                   allowAbsoluteMovement=None, recordDestination=None,
+                   recordObservations=None, recordRewards=None,
+                   recordCommands=None, recordMP4=None):
 
         self.max_retries = max_retries
         self.step_sleep = step_sleep
+        logger.setLevel(log_level)
 
         if videoResolution:
             if videoWithDepth:
@@ -84,15 +91,23 @@ class MinecraftEnv(gym.Env):
         video_height = self.mission_spec.getVideoHeight(0)
         video_width = self.mission_spec.getVideoWidth(0)
         video_depth = self.mission_spec.getVideoChannels(0)
-        self.observation_space = gym.spaces.Box(low=0, high=255,
+        self.observation_space = spaces.Box(low=0, high=255,
                 shape=(video_height, video_width, video_depth))
         # dummy image just for the first observation
         self.last_image = np.zeros((video_height, video_width, video_depth))
 
         self._create_action_space()
 
-        # TODO: allow configuration of MissionRecordSpec
+        # mission recording
         self.mission_record_spec = MalmoPython.MissionRecordSpec()  # record nothing
+        if recordDestination:
+            self.mission_record_spec.setDestination(recordDestination)
+        if recordRewards:
+            self.mission_record_spec.recordRewards()
+        if recordCommands:
+            self.mission_record_spec.recordCommands()
+        if recordMP4:
+            self.mission_record_spec.recordMP4(*recordMP4)
 
     def _create_action_space(self):
         # collect different actions based on allowed commands
@@ -131,23 +146,25 @@ class MinecraftEnv(gym.Env):
         self.action_names = []
         self.action_spaces = []
         if len(discrete_actions) > 0:
-            self.action_spaces.append(gym.spaces.Discrete(len(discrete_actions)))
+            self.action_spaces.append(spaces.Discrete(len(discrete_actions)))
             self.action_names.append(discrete_actions)
         if len(continuous_actions) > 0:
-            self.action_spaces.append(gym.spaces.Box(-1, 1, (len(continuous_actions),)))
+            self.action_spaces.append(spaces.Box(-1, 1, (len(continuous_actions),)))
             self.action_names.append(continuous_actions)
         if len(multidiscrete_actions) > 0:
-            self.action_spaces.append(gym.spaces.MultiDiscrete(multidiscrete_action_ranges))
+            self.action_spaces.append(spaces.MultiDiscrete(multidiscrete_action_ranges))
             self.action_names.append(multidiscrete_actions)
 
         # if there is only one action space, don't wrap it in Tuple
         if len(self.action_spaces) == 1:
             self.action_space = self.action_spaces[0]
         else:
-            self.action_space = gym.spaces.Tuple(self.action_spaces)
+            self.action_space = spaces.Tuple(self.action_spaces)
         logger.debug(self.action_space)
 
     def _reset(self):
+        # this seemed to increase probability of success in first try
+        time.sleep(0.1)
         # Attempt to start a mission
         for retry in range(self.max_retries):
             try:
@@ -171,7 +188,7 @@ class MinecraftEnv(gym.Env):
                 logger.warn(error.text)
 
         logger.info("Mission running")
-        return self._get_observation(world_state)
+        return self._get_video_frame(world_state)
 
     def _take_action(self, actions):
         # if there is only one action space, it wasn't wrapped in Tuple
@@ -180,14 +197,14 @@ class MinecraftEnv(gym.Env):
 
         # send appropriate command for different actions
         for spc, cmds, acts in zip(self.action_spaces, self.action_names, actions):
-            if isinstance(spc, gym.spaces.Discrete):
+            if isinstance(spc, spaces.Discrete):
                 logger.debug(cmds[acts])
                 self.agent_host.sendCommand(cmds[acts])
-            elif isinstance(spc, gym.spaces.Box):
+            elif isinstance(spc, spaces.Box):
                 for cmd, val in zip(cmds, acts):
                     logger.debug(cmd + " " + str(val))
                     self.agent_host.sendCommand(cmd + " " + str(val))
-            elif isinstance(spc, gym.spaces.MultiDiscrete):
+            elif isinstance(spc, spaces.MultiDiscrete):
                 for cmd, val in zip(cmds, acts):
                     logger.debug(cmd + " " + str(val))
                     self.agent_host.sendCommand(cmd + " " + str(val))
@@ -197,14 +214,14 @@ class MinecraftEnv(gym.Env):
         while True:
             time.sleep(self.step_sleep)  # TODO: how long this should be?
             world_state = self.agent_host.peekWorldState()
-            if len(world_state.video_frames) > 0 or not world_state.is_mission_running:
+            if world_state.number_of_observations_since_last_state or not world_state.is_mission_running:
                 break
 
         return self.agent_host.getWorldState()
 
-    def _get_observation(self, world_state):
+    def _get_video_frame(self, world_state):
         # process the video frame
-        if len(world_state.video_frames) > 0:
+        if world_state.number_of_video_frames_since_last_state > 0:
             assert len(world_state.video_frames) == 1
             frame = world_state.video_frames[0]
             image = np.frombuffer(frame.pixels, dtype=np.uint8)
@@ -217,6 +234,13 @@ class MinecraftEnv(gym.Env):
             image = self.last_image
 
         return image
+
+    def _get_observation(self, world_state):
+        if world_state.number_of_observations_since_last_state > 0:
+            assert len(world_state.observations) == 1
+            return json.loads(world_state.observations[0].text)
+        else:
+            return None
 
     def _step(self, action):
         # take the action only if mission is still running
@@ -238,8 +262,8 @@ class MinecraftEnv(gym.Env):
         for r in world_state.rewards:
             reward += r.getValue()
 
-        # take last frame from world state
-        image = self._get_observation(world_state)
+        # take the last frame from world state
+        image = self._get_video_frame(world_state)
 
         # detect terminal state
         done = not world_state.is_mission_running
@@ -251,6 +275,8 @@ class MinecraftEnv(gym.Env):
         info['number_of_video_frames_since_last_state'] = world_state.number_of_video_frames_since_last_state
         info['number_of_rewards_since_last_state'] = world_state.number_of_rewards_since_last_state
         info['number_of_observations_since_last_state'] = world_state.number_of_observations_since_last_state
+        info['mission_control_messages'] = [msg.text for msg in world_state.mission_control_messages]
+        info['observation'] = self._get_observation(world_state)
 
         return image, reward, done, info
 
@@ -274,7 +300,7 @@ class MinecraftEnv(gym.Env):
         pass
 
     def _seed(self, seed=None):
-        self.mission_spec.setWorldSeed(seed)
+        self.mission_spec.setWorldSeed(str(seed))
 
 
 class MinecraftDefaultWorld1Env(MinecraftEnv):

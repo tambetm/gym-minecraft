@@ -1,4 +1,3 @@
-- document dependencies and running in README.md
 - run preliminary models
 - add task descriptions for other missions
 - package Minecraft as minecraft_py

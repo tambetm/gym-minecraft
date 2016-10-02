@@ -1,15 +1,15 @@
 import sys
 import gym
-import gym_pull
-import tambetm_gym_minecraft
+import gym_minecraft
 import time
 
 env = gym.make(sys.argv[1])
-env.configure(allowContinuousMovement=["move", "turn"])
-#env.configure(allowDiscreteMovement=["move", "turn"])
+#env.configure(allowContinuousMovement=["move", "turn"])
+env.configure(allowDiscreteMovement=["move", "turn"], log_level="WARN")
 #env.configure(videoResolution=[160, 120])
+#env.monitor.start("gym_random")
 
-for _ in xrange(2):
+for _ in xrange(10):
     t = time.time()
     env.reset()
     t2 = time.time()
@@ -26,3 +26,5 @@ for _ in xrange(2):
         s += 1
     t3 = time.time()
     print (t3 - t2), "seconds total,", s, "steps total,", s / (t3 - t2), "steps/second"
+
+#env.monitor.close()

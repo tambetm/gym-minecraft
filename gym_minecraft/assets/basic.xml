@@ -67,6 +67,7 @@
           <command>attack</command>
         </ModifierList>
       </ContinuousMovementCommands>
+      <RewardForSendingCommand reward="-1" />
       <RewardForMissionEnd rewardForDeath="-10000">
         <Reward description="found_goal" reward="1000" />
         <Reward description="out_of_time" reward="-1000" />

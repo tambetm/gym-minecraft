@@ -1,84 +1,82 @@
 from gym.envs.registration import register
 from gym.scoreboard.registration import add_task, add_group
-from .package_info import USERNAME
-from .minecraft_env import *
 
 # Env registration
 # ==========================
 
 register(
-    id='{}/MinecraftDefaultWorld1-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftDefaultWorld1Env'.format(USERNAME),
+    id='MinecraftDefaultWorld1-v0',
+    entry_point='gym_minecraft.envs:MinecraftDefaultWorld1Env',
 )
 
 register(
-    id='{}/MinecraftDefaultFlat1-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftDefaultFlat1Env'.format(USERNAME),
+    id='MinecraftDefaultFlat1-v0',
+    entry_point='gym_minecraft.envs:MinecraftDefaultFlat1Env',
 )
 
 register(
-    id='{}/MinecraftTrickyArena1-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftTrickyArena1Env'.format(USERNAME),
+    id='MinecraftTrickyArena1-v0',
+    entry_point='gym_minecraft.envs:MinecraftTrickyArena1Env',
 )
 
 register(
-    id='{}/MinecraftEating1-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftEating1Env'.format(USERNAME),
+    id='MinecraftEating1-v0',
+    entry_point='gym_minecraft.envs:MinecraftEating1Env',
 )
 
 register(
-    id='{}/MinecraftCliffWalking1-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftCliffWalking1Env'.format(USERNAME),
+    id='MinecraftCliffWalking1-v0',
+    entry_point='gym_minecraft.envs:MinecraftCliffWalking1Env',
 )
 
 register(
-    id='{}/MinecraftMaze1-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftMaze1Env'.format(USERNAME),
+    id='MinecraftMaze1-v0',
+    entry_point='gym_minecraft.envs:MinecraftMaze1Env',
 )
 
 register(
-    id='{}/MinecraftMaze2-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftMaze2Env'.format(USERNAME),
+    id='MinecraftMaze2-v0',
+    entry_point='gym_minecraft.envs:MinecraftMaze2Env',
 )
 
 register(
-    id='{}/MinecraftBasic-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftBasicEnv'.format(USERNAME),
+    id='MinecraftBasic-v0',
+    entry_point='gym_minecraft.envs:MinecraftBasicEnv',
 )
 
 register(
-    id='{}/MinecraftObstacles-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftObstaclesEnv'.format(USERNAME),
+    id='MinecraftObstacles-v0',
+    entry_point='gym_minecraft.envs:MinecraftObstaclesEnv',
 )
 
 register(
-    id='{}/MinecraftSimpleRoomMaze-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftSimpleRoomMazeEnv'.format(USERNAME),
+    id='MinecraftSimpleRoomMaze-v0',
+    entry_point='gym_minecraft.envs:MinecraftSimpleRoomMazeEnv',
 )
 
 register(
-    id='{}/MinecraftAttic-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftAtticEnv'.format(USERNAME),
+    id='MinecraftAttic-v0',
+    entry_point='gym_minecraft.envs:MinecraftAtticEnv',
 )
 
 register(
-    id='{}/MinecraftVertical-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftVerticalEnv'.format(USERNAME),
+    id='MinecraftVertical-v0',
+    entry_point='gym_minecraft.envs:MinecraftVerticalEnv',
 )
 
 register(
-    id='{}/MinecraftComplexityUsage-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftComplexityUsageEnv'.format(USERNAME),
+    id='MinecraftComplexityUsage-v0',
+    entry_point='gym_minecraft.envs:MinecraftComplexityUsageEnv',
 )
 
 register(
-    id='{}/MinecraftMedium-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftMediumEnv'.format(USERNAME),
+    id='MinecraftMedium-v0',
+    entry_point='gym_minecraft.envs:MinecraftMediumEnv',
 )
 
 register(
-    id='{}/MinecraftHard-v0'.format(USERNAME),
-    entry_point='{}_gym_minecraft:MinecraftHardEnv'.format(USERNAME),
+    id='MinecraftHard-v0',
+    entry_point='gym_minecraft.envs:MinecraftHardEnv',
 )
 
 # Scoreboard registration
@@ -90,7 +88,7 @@ add_group(
 )
 
 add_task(
-    id='{}/MinecraftDefaultWorld1-v0'.format(USERNAME),
+    id='MinecraftDefaultWorld1-v0',
     group='minecraft',
     summary='Survive and find gold, diamond or redstone!',
     description="""
@@ -121,7 +119,7 @@ included Issue #73.
 )
 
 add_task(
-    id='{}/MinecraftBasic-v0'.format(USERNAME),
+    id='MinecraftBasic-v0',
     group='minecraft',
     summary='Grab the treasure!',
     description="""

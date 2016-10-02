@@ -15,9 +15,9 @@ First you need [Microsoft's Malmö](https://github.com/Microsoft/malmo), which i
 4. Set PYTHONPATH to the location of MalmoPython.so, i.e. `export PYTHONPATH=$PYTHONPATH:$HOME/Malmo/Python_Examples`. Put this also in your `~/.bashrc`.
 
 5. Launch Minecraft:
-```shell
-	cd ~/Malmo/Minecraft
-	./launchClient.sh
+  ```shell
+cd ~/Malmo/Minecraft
+./launchClient.sh
 ```
 You can leave Minecraft running for entire duration of your experiments. You also do not need to be in special menu in Minecraft, the Malmo mod switches the game mode automatically when it needs to.
 
@@ -28,16 +28,16 @@ You can leave Minecraft running for entire duration of your experiments. You als
 You need to install [gym-pull](https://github.com/ppaquette/gym-pull)
 
 ```shell
-    pip install gym-pull
+pip install gym-pull
 ```
 
  To load and run the environments, run
 
 ```python
-    import gym
-	import gym_pull
-	gym_pull.pull('github.com/tambetm/gym-minecraft')        # Only required once, envs will be loaded with import gym_pull afterwards
-	env = gym.make('tambetm/MinecraftBasic-v0')
+import gym
+import gym_pull
+gym_pull.pull('github.com/tambetm/gym-minecraft')        # Only required once, envs will be loaded with import gym_pull afterwards
+env = gym.make('tambetm/MinecraftBasic-v0')
 ```
 
 See test folder for some example scripts.
@@ -70,22 +70,22 @@ The default settings for environments might not be optimal for you. Luckily you 
 For example to use discrete actions instead of continuous actions:
 
 ```python
-	env = gym.make('tambetm/MinecraftBasic-v0')
-	env.configure(allowDiscreteMovement=["move", "turn"])
+env = gym.make('tambetm/MinecraftBasic-v0')
+env.configure(allowDiscreteMovement=["move", "turn"])
 ```
 
 To use continuous actions instead of discrete actions:
 
 ```python
-	env = gym.make('tambetm/MinecraftBasic-v0')
-	env.configure(allowContinuousMovement=["move", "turn"])
+env = gym.make('tambetm/MinecraftBasic-v0')
+env.configure(allowContinuousMovement=["move", "turn"])
 ```
 
 To use different video resolution:
 
 ```python
-	env = gym.make('tambetm/MinecraftBasic-v0')
-	env.configure(videoResolution=[40, 30])
+env = gym.make('tambetm/MinecraftBasic-v0')
+env.configure(videoResolution=[40, 30])
 ```
 
 More documentation about configuration options is coming, meanwhile refer to the source code.

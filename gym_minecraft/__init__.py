@@ -6,77 +6,92 @@ from gym.scoreboard.registration import add_task, add_group
 
 register(
     id='MinecraftDefaultWorld1-v0',
-    entry_point='gym_minecraft.envs:MinecraftDefaultWorld1Env',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'default_world_1.xml'}
 )
 
 register(
     id='MinecraftDefaultFlat1-v0',
-    entry_point='gym_minecraft.envs:MinecraftDefaultFlat1Env',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'default_flat_1.xml'}
 )
 
 register(
     id='MinecraftTrickyArena1-v0',
-    entry_point='gym_minecraft.envs:MinecraftTrickyArena1Env',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'tricky_arena_1.xml'}
 )
 
 register(
     id='MinecraftEating1-v0',
-    entry_point='gym_minecraft.envs:MinecraftEating1Env',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'eating_1.xml'}
 )
 
 register(
     id='MinecraftCliffWalking1-v0',
-    entry_point='gym_minecraft.envs:MinecraftCliffWalking1Env',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'cliff_walking_1.xml'}
 )
 
 register(
     id='MinecraftMaze1-v0',
-    entry_point='gym_minecraft.envs:MinecraftMaze1Env',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'maze_1.xml'}
 )
 
 register(
     id='MinecraftMaze2-v0',
-    entry_point='gym_minecraft.envs:MinecraftMaze2Env',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'maze_2.xml'}
 )
 
 register(
     id='MinecraftBasic-v0',
-    entry_point='gym_minecraft.envs:MinecraftBasicEnv',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'basic.xml'}
 )
 
 register(
     id='MinecraftObstacles-v0',
-    entry_point='gym_minecraft.envs:MinecraftObstaclesEnv',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'obstacles.xml'}
 )
 
 register(
     id='MinecraftSimpleRoomMaze-v0',
-    entry_point='gym_minecraft.envs:MinecraftSimpleRoomMazeEnv',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'simpleRoomMaze.xml'}
 )
 
 register(
     id='MinecraftAttic-v0',
-    entry_point='gym_minecraft.envs:MinecraftAtticEnv',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'attic.xml'}
 )
 
 register(
     id='MinecraftVertical-v0',
-    entry_point='gym_minecraft.envs:MinecraftVerticalEnv',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'vertical.xml'}
 )
 
 register(
     id='MinecraftComplexityUsage-v0',
-    entry_point='gym_minecraft.envs:MinecraftComplexityUsageEnv',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'complexity_usage.xml'}
 )
 
 register(
     id='MinecraftMedium-v0',
-    entry_point='gym_minecraft.envs:MinecraftMediumEnv',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'medium.xml'}
 )
 
 register(
     id='MinecraftHard-v0',
-    entry_point='gym_minecraft.envs:MinecraftHardEnv',
+    entry_point='gym_minecraft.envs:MinecraftEnv',
+    kwargs={'mission_file': 'hard.xml'}
 )
 
 # Scoreboard registration

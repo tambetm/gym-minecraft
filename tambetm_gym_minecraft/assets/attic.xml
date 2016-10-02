@@ -4,6 +4,11 @@
     <Summary>Find the goal! Have you looked in the attic?</Summary>
   </About>
 
+  <ModSettings>
+      <!--MsPerTick>10</MsPerTick-->
+      <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
+  </ModSettings>
+
   <ServerSection>
      <ServerInitialConditions>
         <Time>

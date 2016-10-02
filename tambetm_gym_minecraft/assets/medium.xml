@@ -4,6 +4,11 @@
     <Summary>Find the goal! This is Hotel California!</Summary>
   </About>
 
+  <ModSettings>
+      <!--MsPerTick>10</MsPerTick-->
+      <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
+  </ModSettings>
+
   <ServerSection>
      <ServerInitialConditions>
         <Time>

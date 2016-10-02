@@ -4,9 +4,10 @@
   <About>
     <Summary>Cliff walking mission based on Sutton and Barto.</Summary>
   </About>
-  
+
   <ModSettings>
-    <MsPerTick>1</MsPerTick>
+      <!--MsPerTick>10</MsPerTick-->
+      <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
   </ModSettings>
 
   <ServerSection>

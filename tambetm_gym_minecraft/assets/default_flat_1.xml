@@ -6,6 +6,11 @@
     <Summary>A simple 10 second mission with a reward for reaching a location.</Summary>
   </About>
 
+  <ModSettings>
+      <!--MsPerTick>10</MsPerTick-->
+      <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
+  </ModSettings>
+
   <ServerSection>
     <ServerInitialConditions>
             <Time>

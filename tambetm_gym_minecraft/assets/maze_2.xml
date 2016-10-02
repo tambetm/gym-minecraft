@@ -4,6 +4,11 @@
       <About>
         <Summary>Run the maze!</Summary>
       </About>
+
+    <ModSettings>
+        <!--MsPerTick>10</MsPerTick-->
+        <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
+    </ModSettings>
     
     <ServerSection>
         <ServerInitialConditions>

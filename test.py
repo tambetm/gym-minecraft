@@ -1,11 +1,13 @@
+import sys
 import gym
 import gym_pull
 import tambetm_gym_minecraft
 import time
 
-env = gym.make('tambetm/MinecraftBasic-v0')
-#env.configure(allowDiscreteMovement=True)
-env.configure(videoResolution=[640, 480])
+env = gym.make(sys.argv[1])
+env.configure(allowContinuousMovement=["move", "turn"])
+#env.configure(allowDiscreteMovement=["move", "turn"])
+#env.configure(videoResolution=[160, 120])
 
 for _ in xrange(2):
     t = time.time()
@@ -23,4 +25,4 @@ for _ in xrange(2):
         #print "info", info
         s += 1
     t3 = time.time()
-    print "Time:", (t3 - t2), "Steps:", s, "Steps/s:", s / (t3 - t2)
+    print (t3 - t2), "seconds total,", s, "steps total,", s / (t3 - t2), "steps/second"

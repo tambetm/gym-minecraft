@@ -4,6 +4,11 @@
     <Summary>Find the goal! Welcome to the Buckingham Palace!</Summary>
   </About>
 
+  <ModSettings>
+      <!--MsPerTick>10</MsPerTick-->
+      <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
+  </ModSettings>
+
   <ServerSection>
      <ServerInitialConditions>
         <Time>

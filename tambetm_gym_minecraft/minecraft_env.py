@@ -1,7 +1,6 @@
 import logging
 import time
 import os
-# import multiprocessing
 
 import numpy as np
 import gym
@@ -9,18 +8,7 @@ import gym.spaces
 import MalmoPython
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG)
-
-'''
-# Singleton pattern
-class MinecraftLock:
-    lock = None
-    def __init__(self):
-        if not MinecraftLock.lock:
-            MinecraftLock.lock = multiprocessing.Lock()
-    def get_lock(self):
-        return MinecraftLock.lock
-'''
+logger.setLevel(logging.DEBUG)
 
 
 class MinecraftEnv(gym.Env):
@@ -29,7 +17,7 @@ class MinecraftEnv(gym.Env):
     def __init__(self, mission_file):
         super(MinecraftEnv, self).__init__()
 
-        # TODO: start Minecraft process
+        # TODO: start Minecraft process?
 
         self.agent_host = MalmoPython.AgentHost()
         assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets')
@@ -39,12 +27,16 @@ class MinecraftEnv(gym.Env):
         self.mission_spec = MalmoPython.MissionSpec(mission_xml, True)
         logger.info("Loaded mission: " + self.mission_spec.getSummary())
 
-    def _configure(self, videoResolution=None, videoWithDepth=None,
+    def _configure(self, max_retries=3, step_sleep=0,
+                   videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
                    observeFullInventory=None, observeGrid=None,
                    observeDistance=None, observeChat=None,
                    allowContinuousMovement=None, allowDiscreteMovement=None,
                    allowAbsoluteMovement=None):
+
+        self.max_retries = max_retries
+        self.step_sleep = step_sleep
 
         if videoResolution:
             if videoWithDepth:
@@ -65,15 +57,29 @@ class MinecraftEnv(gym.Env):
         if observeChat:
             self.mission_spec.observeChat()
 
-        if allowContinuousMovement:
-            self.mission_spec.allowAllContinuousMovementCommands()
-        if allowDiscreteMovement:
-            self.mission_spec.allowAllDiscreteMovementCommands()
-        if allowAbsoluteMovement:
-            self.mission_spec.allowAllAbsoluteMovementCommands()
+        if allowContinuousMovement or allowDiscreteMovement or allowAbsoluteMovement:
+            # if there are any parameters, remove current command handlers first
+            self.mission_spec.removeAllCommandHandlers()
 
-        # TODO: produce observation space dynamically based on
-        # requested features
+            if allowContinuousMovement is True:
+                self.mission_spec.allowAllContinuousMovementCommands()
+            elif isinstance(allowContinuousMovement, list):
+                for cmd in allowContinuousMovement:
+                    self.mission_spec.allowContinuousMovementCommand(cmd)
+
+            if allowDiscreteMovement is True:
+                self.mission_spec.allowAllDiscreteMovementCommands()
+            elif isinstance(allowDiscreteMovement, list):
+                for cmd in allowDiscreteMovement:
+                    self.mission_spec.allowDiscreteMovementCommand(cmd)
+
+            if allowAbsoluteMovement is True:
+                self.mission_spec.allowAllAbsoluteMovementCommands()
+            elif isinstance(allowAbsoluteMovement, list):
+                for cmd in allowAbsoluteMovement:
+                    self.mission_spec.allowAbsoluteMovementCommand(cmd)
+
+        # TODO: produce observation space dynamically based on requested features
 
         video_height = self.mission_spec.getVideoHeight(0)
         video_width = self.mission_spec.getVideoWidth(0)
@@ -107,14 +113,12 @@ class MinecraftEnv(gym.Env):
                         assert False, "Unknown continuous action " + cmd
                 elif ch == "DiscreteMovement":
                     if cmd in ["movenorth", "moveeast", "movesouth", "movewest"]:
-                        discrete_actions.append(cmd)
+                        discrete_actions.append(cmd + " 1")
                     elif cmd in ["move", "turn", "look"]:
-                        multidiscrete_actions.append(cmd)
-                        multidiscrete_action_ranges.append([-1, 1])
+                        discrete_actions.append(cmd + " 1")
+                        discrete_actions.append(cmd + " -1")
                     elif cmd in ["jump", "attack", "use"]:
-                        if cmd not in discrete_actions:
-                            multidiscrete_actions.append(cmd)
-                            multidiscrete_action_ranges.append([0, 1])
+                        discrete_actions.append(cmd + " 1")
                     else:
                         assert False, "Unknown discrete action " + cmd
                 # TODO: support for AbsoluteMovement
@@ -143,13 +147,12 @@ class MinecraftEnv(gym.Env):
 
     def _reset(self):
         # Attempt to start a mission
-        max_retries = 3
-        for retry in range(max_retries):
+        for retry in range(self.max_retries):
             try:
                 self.agent_host.startMission(self.mission_spec, self.mission_record_spec)
                 break
             except RuntimeError as e:
-                if retry == max_retries - 1:
+                if retry == self.max_retries - 1:
                     logger.error("Error starting mission: "+str(e))
                     raise
                 else:
@@ -173,15 +176,15 @@ class MinecraftEnv(gym.Env):
             actions = [actions]
 
         # send appropriate command for different actions
-        for asp, cmds, acts in zip(self.action_spaces, self.action_names, actions):
-            if isinstance(asp, gym.spaces.Discrete):
-                logger.debug(cmds[acts] + " 1")
-                self.agent_host.sendCommand(cmds[acts] + " 1")
-            elif isinstance(asp, gym.spaces.Box):
+        for spc, cmds, acts in zip(self.action_spaces, self.action_names, actions):
+            if isinstance(spc, gym.spaces.Discrete):
+                logger.debug(cmds[acts])
+                self.agent_host.sendCommand(cmds[acts])
+            elif isinstance(spc, gym.spaces.Box):
                 for cmd, val in zip(cmds, acts):
                     logger.debug(cmd + " " + str(val))
                     self.agent_host.sendCommand(cmd + " " + str(val))
-            elif isinstance(asp, gym.spaces.MultiDiscrete):
+            elif isinstance(spc, gym.spaces.MultiDiscrete):
                 for cmd, val in zip(cmds, acts):
                     logger.debug(cmd + " " + str(val))
                     self.agent_host.sendCommand(cmd + " " + str(val))
@@ -189,7 +192,7 @@ class MinecraftEnv(gym.Env):
     def _get_world_state(self):
         # wait till we have got at least one video frame or mission has ended
         while True:
-            time.sleep(1)  # TODO: how long this should be?
+            time.sleep(self.step_sleep)  # TODO: how long this should be?
             world_state = self.agent_host.peekWorldState()
             if len(world_state.video_frames) > 0 or not world_state.is_mission_running:
                 break
@@ -197,7 +200,7 @@ class MinecraftEnv(gym.Env):
         return self.agent_host.getWorldState()
 
     def _step(self, action):
-        # take the action if mission is still running
+        # take the action only if mission is still running
         world_state = self.agent_host.peekWorldState()
         if world_state.is_mission_running:
             # take action
@@ -211,7 +214,7 @@ class MinecraftEnv(gym.Env):
         for msg in world_state.mission_control_messages:
             logger.info(msg.text)
 
-        # sum rewards (actually there can be only one)
+        # sum rewards (actually there should be only one)
         reward = 0
         for r in world_state.rewards:
             reward += r.getValue()
@@ -255,16 +258,86 @@ class MinecraftEnv(gym.Env):
                 cv2.imshow('render', image)
                 cv2.waitKey(1)  # wait the smallest amount possible - 1ms
         else:
-            assert False, "Unknown render mode " + mode
+            assert False, "Unknown render mode: " + mode
 
     def _close(self):
-        # TODO: shut down Minecraft process
+        # TODO: shut down Minecraft process?
         pass
 
     def _seed(self, seed=None):
         self.mission_spec.setWorldSeed(seed)
 
 
+class MinecraftDefaultWorld1Env(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftDefaultWorld1Env, self).__init__("default_world_1.xml")
+
+
+class MinecraftDefaultFlat1Env(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftDefaultFlat1Env, self).__init__("default_flat_1.xml")
+
+
+class MinecraftTrickyArena1Env(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftTrickyArena1Env, self).__init__("tricky_arena_1.xml")
+
+
+class MinecraftEating1Env(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftEating1Env, self).__init__("eating_1.xml")
+
+
+class MinecraftCliffWalking1Env(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftCliffWalking1Env, self).__init__("cliff_walking_1.xml")
+
+
+class MinecraftMaze1Env(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftMaze1Env, self).__init__("maze_1.xml")
+
+
+class MinecraftMaze2Env(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftMaze2Env, self).__init__("maze_2.xml")
+
+
 class MinecraftBasicEnv(MinecraftEnv):
     def __init__(self):
         super(MinecraftBasicEnv, self).__init__("basic.xml")
+
+
+class MinecraftObstaclesEnv(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftObstaclesEnv, self).__init__("obstacles.xml")
+
+
+class MinecraftSimpleRoomMazeEnv(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftSimpleRoomMazeEnv, self).__init__("simpleRoomMaze.xml")
+
+
+class MinecraftAtticEnv(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftAtticEnv, self).__init__("attic.xml")
+
+
+class MinecraftVerticalEnv(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftVerticalEnv, self).__init__("vertical.xml")
+
+
+class MinecraftComplexityUsageEnv(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftComplexityUsageEnv, self).__init__("complexity_usage.xml")
+
+
+class MinecraftMediumEnv(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftMediumEnv, self).__init__("medium.xml")
+
+
+class MinecraftHardEnv(MinecraftEnv):
+    def __init__(self):
+        super(MinecraftHardEnv, self).__init__("hard.xml")

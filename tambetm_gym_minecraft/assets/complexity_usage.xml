@@ -4,6 +4,11 @@
     <Summary>Find the goal! A small house. Who dropped the lava on the carpet?</Summary>
   </About>
 
+  <ModSettings>
+      <!--MsPerTick>10</MsPerTick-->
+      <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
+  </ModSettings>
+
   <ServerSection>
      <ServerInitialConditions>
         <Time>

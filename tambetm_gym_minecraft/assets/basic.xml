@@ -4,6 +4,11 @@
     <Summary>Find the goal!</Summary>
   </About>
 
+  <ModSettings>
+      <!--MsPerTick>10</MsPerTick-->
+      <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
+  </ModSettings>
+
   <ServerSection>
       <ServerInitialConditions>
         <Time>

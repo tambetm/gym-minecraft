@@ -4,6 +4,11 @@
             <Summary>Everyday Minecraft life: survival</Summary>
         </About>
 
+        <ModSettings>
+            <!--MsPerTick>10</MsPerTick-->
+            <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
+        </ModSettings>
+
         <ServerSection>
             <ServerHandlers>
                 <DefaultWorldGenerator />

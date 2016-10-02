@@ -1,6 +1,15 @@
-- produce observation spaces automatically based on requested (or default) features
-- add other missions
-- allow configuration of MissionRecordSpec
-- start Minecraft process automatically (and shut down in close())
-- package Minecraft as minecraft_py
+- document dependencies and running in README.md
 - run preliminary models
+- add task descriptions for other missions
+- package Minecraft as minecraft_py
+
+- start Minecraft process automatically (and shut down in close())
+  * if Minecraft is started from __init__ every time, then it's gonna be slow
+  * we could check if Minecraft is already running and if not, run it ourselves
+  * but that would require path to Minecraft folder. maybe it's easier for user to just run Minecraft manually?
+  * there is no point in shutting down Minecraft in close(), that would make subsequent runs very slow
+- produce observation spaces automatically based on requested (or default) features
+  * not used currently?
+- allow configuration of MissionRecordSpec
+  * kinda useless?
+- add support for AbsoluteCommands

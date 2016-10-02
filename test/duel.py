@@ -5,22 +5,24 @@ import tambetm_gym_minecraft
 from gym.spaces import Box, Discrete
 from keras.models import Model
 from keras.layers import Input, Permute, Convolution2D, Flatten, Dense, Lambda
+from keras.optimizers import Adam, RMSprop
 from keras import backend as K
 import numpy as np
+from buffer import Buffer
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--hidden_size', type=int, default=256)
+parser.add_argument('--hidden_size', type=int, default=100)
 parser.add_argument('--layers', type=int, default=1)
-parser.add_argument('--min_train', type=int, default=10)
 parser.add_argument('--train_repeat', type=int, default=10)
 parser.add_argument('--gamma', type=float, default=0.99)
 parser.add_argument('--tau', type=float, default=0.001)
-parser.add_argument('--episodes', type=int, default=200)
-parser.add_argument('--max_timesteps', type=int, default=200)
+parser.add_argument('--episodes', type=int, default=1000)
+parser.add_argument('--replay_size', type=int, default=500000)
+parser.add_argument('--max_timesteps', type=int, default=1000)
 parser.add_argument('--activation', choices=['tanh', 'relu'], default='relu')
 parser.add_argument('--optimizer', choices=['adam', 'rmsprop'], default='adam')
-#parser.add_argument('--optimizer_lr', type=float, default=0.001)
+parser.add_argument('--optimizer_lr', type=float)
 parser.add_argument('--exploration', type=float, default=0.1)
 parser.add_argument('--advantage', choices=['naive', 'max', 'avg'], default='naive')
 parser.add_argument('--display', action='store_true', default=True)
@@ -40,7 +42,8 @@ if args.gym_record:
 
 def createLayers():
     x = Input(shape=env.observation_space.shape)
-    h = Permute((3, 1, 2))(x)
+    h = Lambda(lambda a: a / 255.0)(x)
+    h = Permute((3, 1, 2))(h)
     h = Convolution2D(32, 4, 4, subsample=(2, 2), activation=args.activation)(h)
     h = Convolution2D(64, 4, 4, subsample=(2, 2), activation=args.activation)(h)
     h = Flatten()(h)
@@ -58,6 +61,19 @@ def createLayers():
 
     return x, z
 
+if args.optimizer == 'adam':
+    if args.optimizer_lr:
+        optimizer = Adam(args.optimizer_lr)
+    else:
+        optimizer = args.optimizer
+elif args.optimizer == 'rmsprop':
+    if args.optimizer_lr:
+        optimizer = RMSprop(args.optimizer_lr)
+    else:
+        optimizer = args.optimizer
+else:
+    assert False, "Unknown optimizer " + args.optimizer
+
 x, z = createLayers()
 model = Model(input=x, output=z)
 model.summary()
@@ -67,11 +83,7 @@ x, z = createLayers()
 target_model = Model(input=x, output=z)
 target_model.set_weights(model.get_weights())
 
-prestates = []
-actions = []
-rewards = []
-poststates = []
-terminals = []
+mem = Buffer(args.replay_size, env.observation_space.shape, (1,))
 
 total_reward = 0
 for i_episode in xrange(args.episodes):
@@ -90,38 +102,29 @@ for i_episode in xrange(args.episodes):
             action = np.argmax(q[0])
         #print "action:", action
 
-        prestates.append(observation)
-        actions.append(action)
-
+        prev_observation = observation
         observation, reward, done, info = env.step(action)
         episode_reward += reward
         #print "reward:", reward
+        mem.add(prev_observation, np.array([action]), reward, observation, done)
 
-        rewards.append(reward)
-        poststates.append(observation)
-        terminals.append(done)
+        for k in xrange(args.train_repeat):
+            prestates, actions, rewards, poststates, terminals = mem.sample(args.batch_size)
 
-        if len(prestates) > args.min_train:
-            for k in xrange(args.train_repeat):
-                if len(prestates) > args.batch_size:
-                    indexes = np.random.choice(len(prestates), size=args.batch_size)
+            qpre = model.predict(prestates)
+            qpost = model.predict(poststates)
+            for i in xrange(qpre.shape[0]):
+                if terminals[i]:
+                    qpre[i, actions[i]] = rewards[i]
                 else:
-                    indexes = range(len(prestates))
+                    qpre[i, actions[i]] = rewards[i] + args.gamma * np.amax(qpost[i])
+            model.train_on_batch(prestates, qpre)
 
-                qpre = model.predict(np.array(prestates)[indexes])
-                qpost = model.predict(np.array(poststates)[indexes])
-                for i in xrange(len(indexes)):
-                    if terminals[indexes[i]]:
-                        qpre[i, actions[indexes[i]]] = rewards[indexes[i]]
-                    else:
-                        qpre[i, actions[indexes[i]]] = rewards[indexes[i]] + args.gamma * np.amax(qpost[i])
-                model.train_on_batch(np.array(prestates)[indexes], qpre)
-
-                weights = model.get_weights()
-                target_weights = target_model.get_weights()
-                for i in xrange(len(weights)):
-                    target_weights[i] = args.tau * weights[i] + (1 - args.tau) * target_weights[i]
-                target_model.set_weights(target_weights)
+            weights = model.get_weights()
+            target_weights = target_model.get_weights()
+            for i in xrange(len(weights)):
+                target_weights[i] = args.tau * weights[i] + (1 - args.tau) * target_weights[i]
+            target_model.set_weights(target_weights)
 
         if done:
             break

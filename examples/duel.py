@@ -1,4 +1,6 @@
 import argparse
+import csv
+import time
 import gym
 import gym_minecraft
 from gym.spaces import Box, Discrete
@@ -27,6 +29,7 @@ parser.add_argument('--advantage', choices=['naive', 'max', 'avg'], default='nai
 parser.add_argument('--display', action='store_true', default=True)
 parser.add_argument('--no_display', dest='display', action='store_false')
 parser.add_argument('--gym_record')
+parser.add_argument('--save_csv')
 parser.add_argument('environment')
 args = parser.parse_args()
 
@@ -37,6 +40,26 @@ assert isinstance(env.action_space, Discrete)
 
 if args.gym_record:
     env.monitor.start(args.gym_record)
+
+if args.save_csv:
+    csv_file = open(args.save_csv, "wb")
+    csv_writer = csv.writer(csv_file)
+    csv_writer.writerow((
+          "episode",
+          "episode_reward"
+          "average_reward",
+          "min_reward",
+          "max_reward",
+          "last_exploration_rate",
+          "total_train_steps",
+          "replay_memory_count",
+          "meanq",
+          "meancost",
+          "episode_time",
+          "episode_steps",
+          "steps_per_second"
+        ))
+    csv_file.flush()
 
 
 def createLayers():
@@ -84,10 +107,15 @@ target_model.set_weights(model.get_weights())
 
 mem = Buffer(args.replay_size, env.observation_space.shape, (1,))
 
-total_reward = 0
+all_rewards = []
+total_train_steps = 0
 for i_episode in xrange(args.episodes):
     observation = env.reset()
     episode_reward = 0
+    maxqs = []
+    costs = []
+    begin = time.time()
+    steps = 0
     for t in xrange(args.max_timesteps):
         if args.display:
             env.render()
@@ -99,6 +127,7 @@ for i_episode in xrange(args.episodes):
             q = model.predict(s, batch_size=1)
             #print "q:", q
             action = np.argmax(q[0])
+            maxqs.append(np.max(q[0]))
         #print "action:", action
 
         prev_observation = observation
@@ -118,7 +147,9 @@ for i_episode in xrange(args.episodes):
                     qpre[i, actions[i]] = rewards[i]
                 else:
                     qpre[i, actions[i]] = rewards[i] + args.gamma * np.amax(qpost[i])
-            model.train_on_batch(prestates, qpre)
+            cost = model.train_on_batch(prestates, qpre)
+            costs.append(cost)
+            total_train_steps += 1
 
             weights = model.get_weights()
             target_weights = target_model.get_weights()
@@ -126,11 +157,31 @@ for i_episode in xrange(args.episodes):
                 target_weights[i] = args.tau * weights[i] + (1 - args.tau) * target_weights[i]
             target_model.set_weights(target_weights)
 
+        steps += 1
         if done:
             break
 
     print "Episode {} finished after {} timesteps, episode reward {}".format(i_episode + 1, t + 1, episode_reward)
-    total_reward += episode_reward
+    all_rewards.append(episode_reward)
+
+    elapsed = time.time() - begin
+    if args.save_csv:
+        csv_writer.writerow((
+              i_episode + 1,
+              episode_reward,
+              np.mean(all_rewards),
+              np.min(all_rewards),
+              np.max(all_rewards),
+              args.exploration,
+              total_train_steps,
+              mem.count,
+              np.mean(maxqs),
+              np.mean(costs),
+              elapsed,
+              steps,
+              steps / elapsed
+            ))
+        csv_file.flush()
 
 print "Average reward per episode {}".format(total_reward / args.episodes)
 

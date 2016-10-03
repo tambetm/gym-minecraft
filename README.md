@@ -125,3 +125,21 @@ Following optimizations help to run the training process faster:
   </ModSettings>
 ```
 But beware that the bottleneck might be your training process - can it really handle more than 20 observations per second? Otherwise you would be wasting observations and moving forward in time in bigger steps (which might actually be good thing in some contexts). Also the timeout in missions still counts each tick as 50ms, so actually your missions time out faster.
+
+## Running multiple instances in parallel
+
+You can have several Minecraft instances serving pool of agents. First you need to start number of Minecraft processes on different ports:
+
+```shell
+cd ~/Malmo/Minecraft
+./launchClient.sh -port 10000
+./launchClient.sh -port 10001
+```
+
+Then set up client pool when configuring the environment:
+```python
+env = gym.make('MinecraftBasic-v0')
+env.configure(client_pool=[("localhost", 10000), ("localhost", 10001)])
+```
+
+Malmo will automatically use the first free Minecraft instance from the list.

@@ -31,6 +31,8 @@ class MinecraftEnv(gym.Env):
         self.mission_spec = MalmoPython.MissionSpec(mission_xml, True)
         logger.info("Loaded mission: " + self.mission_spec.getSummary())
 
+        self.client_pool = None
+
     def _configure(self, max_retries=3, step_sleep=0, log_level=logging.INFO,
                    videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
@@ -39,7 +41,8 @@ class MinecraftEnv(gym.Env):
                    allowContinuousMovement=None, allowDiscreteMovement=None,
                    allowAbsoluteMovement=None, recordDestination=None,
                    recordObservations=None, recordRewards=None,
-                   recordCommands=None, recordMP4=None):
+                   recordCommands=None, recordMP4=None,
+                   client_pool=None):
 
         self.max_retries = max_retries
         self.step_sleep = step_sleep
@@ -85,6 +88,12 @@ class MinecraftEnv(gym.Env):
             elif isinstance(allowAbsoluteMovement, list):
                 for cmd in allowAbsoluteMovement:
                     self.mission_spec.allowAbsoluteMovementCommand(cmd)
+
+        if client_pool:
+            assert isinstance(client_pool, list), "client_pool must be list of tuples of (IP-address, port)"
+            self.client_pool = MalmoPython.ClientPool()
+            for client in client_pool:
+                self.client_pool.add(MalmoPython.ClientInfo(*client))
 
         # TODO: produce observation space dynamically based on requested features
 
@@ -168,7 +177,10 @@ class MinecraftEnv(gym.Env):
         # Attempt to start a mission
         for retry in range(self.max_retries):
             try:
-                self.agent_host.startMission(self.mission_spec, self.mission_record_spec)
+                if self.client_pool:
+                    self.agent_host.startMission(self.mission_spec, self.client_pool, self.mission_record_spec, 0, "experiment_id")
+                else:
+                    self.agent_host.startMission(self.mission_spec, self.mission_record_spec)
                 break
             except RuntimeError as e:
                 if retry == self.max_retries - 1:

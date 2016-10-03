@@ -34,7 +34,7 @@ parser.add_argument('environment')
 args = parser.parse_args()
 
 env = gym.make(args.environment)
-env.configure(videoResolution=[40, 30], allowDiscreteMovement=["move", "turn"])
+env.configure(videoResolution=[40, 30], allowDiscreteMovement=["move", "turn"], log_level='INFO')
 assert isinstance(env.observation_space, Box)
 assert isinstance(env.action_space, Discrete)
 
@@ -46,7 +46,7 @@ if args.save_csv:
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow((
           "episode",
-          "episode_reward"
+          "episode_reward",
           "average_reward",
           "min_reward",
           "max_reward",
@@ -183,7 +183,7 @@ for i_episode in xrange(args.episodes):
             ))
         csv_file.flush()
 
-print "Average reward per episode {}".format(total_reward / args.episodes)
+print "Average reward per episode {}".format(np.mean(all_rewards))
 
 if args.gym_record:
     env.monitor.close()

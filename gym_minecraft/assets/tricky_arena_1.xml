@@ -142,6 +142,7 @@
           <Width>640</Width>
           <Height>480</Height>
         </VideoProducer>
+        <ObservationFromFullStats />
         <RewardForTouchingBlockType>
           <Block behaviour="oncePerBlock" cooldownInMs="1000" reward="100" type="obsidian"/>
         </RewardForTouchingBlockType>

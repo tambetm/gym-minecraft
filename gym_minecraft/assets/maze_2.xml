@@ -49,6 +49,7 @@
                 <Width>320</Width>
                 <Height>240</Height>
             </VideoProducer>
+            <ObservationFromFullStats />
             <ContinuousMovementCommands>
                 <ModifierList type="deny-list">
                     <command>attack</command>

@@ -439,6 +439,7 @@
           <Width>480</Width>
           <Height>320</Height>
         </VideoProducer>
+        <ObservationFromFullStats />
         <RewardForCollectingItem>
           <Item reward="2" type="fish porkchop beef chicken rabbit mutton"/>
           <Item reward="1" type="potato egg carrot"/>

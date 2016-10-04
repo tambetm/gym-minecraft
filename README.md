@@ -2,6 +2,81 @@
 
 Gym Minecraft is an environment bundle for OpenAI Gym. It is based on [Microsoft's Malmö](https://github.com/Microsoft/malmo), which is a platform for Artificial Intelligence experimentation and research built on top of Minecraft.
 
+<table>
+<tr>
+<td>
+MinecraftDefaultWorld1-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftDefaultWorld1-v0.png" width="280" height="210" />
+</td>
+<td>
+MinecraftDefaultFlat1-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftDefaultFlat1-v0.png" width="280" height="210"/>
+</td>
+<td>
+MinecraftTrickyArena1-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftTrickyArena1-v0.png" width="280" height="210"/>
+</td>
+</tr>
+<tr>
+<td>
+MinecraftEating1-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftEating1-v0.png" width="280" height="210" />
+</td>
+<td>
+MinecraftCliffWalking1-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftCliffWalking1-v0.png" width="280" height="210"/>
+</td>
+<td>
+MinecraftMaze1-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftMaze1-v0.png" width="280" height="210"/>
+</td>
+</tr>
+<tr>
+<td>
+MinecraftMaze2-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftMaze2-v0.png" width="280" height="210" />
+</td>
+<td>
+MinecraftBasic-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftBasic-v0.png" width="280" height="210"/>
+</td>
+<td>
+MinecraftObstacles-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftObstacles-v0.png" width="280" height="210"/>
+</td>
+</tr>
+<tr>
+<td>
+MinecraftSimpleRoomMaze-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftSimpleRoomMaze-v0.png" width="280" height="210" />
+</td>
+<td>
+MinecraftAttic-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftAttic-v0.png" width="280" height="210"/>
+</td>
+<td>
+MinecraftVertical-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftVertical-v0.png" width="280" height="210"/>
+</td>
+</tr>
+<tr>
+<td>
+MinecraftComplexityUsage-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftComplexityUsage-v0.png" width="280" height="210" />
+</td>
+<td>
+MinecraftMedium-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftMedium-v0.png" width="280" height="210"/>
+</td>
+<td>
+MinecraftHard-v0<br/>
+<img src="https://raw.githubusercontent.com/tambetm/gym-minecraft/master/images/MinecraftHard-v0.png" width="280" height="210"/>
+</td>
+</tr>
+</table>
+
+Basically these are [original Malmö missions](https://github.com/Microsoft/malmo/raw/master/sample_missions/MalmoMissionTable_CurrentTasks_2016_06_14.pdf) with only `<PrioritiseOffscreenRendering>` added to speed up training.
+
 ## Prerequisites
 
 1. Install the dependencies for your OS: [Windows](https://github.com/Microsoft/malmo/blob/master/doc/install_windows.md), [Linux](https://github.com/Microsoft/malmo/blob/master/doc/install_linux.md), [MacOSX](https://github.com/Microsoft/malmo/blob/master/doc/install_macosx.md). You can skip Torch, Mono and ALE parts.
@@ -54,27 +129,6 @@ while not done:
         action = env.action_space.sample()
         obs, reward, done, info = env.step(action)
 ```
-
-## Environments
-
-Environments included:
-- MinecraftDefaultWorld1-v0
-- MinecraftDefaultFlat1-v0
-- MinecraftTrickyArena1-v0
-- MinecraftEating1-v0
-- MinecraftCliffWalking1-v0
-- MinecraftMaze1-v0
-- MinecraftMaze2-v0
-- MinecraftBasic-v0
-- MinecraftObstacles-v0
-- MinecraftSimpleRoomMaze-v0
-- MinecraftAttic-v0
-- MinecraftVertical-v0
-- MinecraftComplexityUsage-v0
-- MinecraftMedium-v0
-- MinecraftHard-v0
-
-Basically these are [original Malmö missions](https://github.com/Microsoft/malmo/raw/master/sample_missions/MalmoMissionTable_CurrentTasks_2016_06_14.pdf) with only `<PrioritiseOffscreenRendering>` added to speed up training.
 
 ## Overriding default settings
 

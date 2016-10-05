@@ -4,6 +4,7 @@ import os
 
 import numpy as np
 import json
+import xml.etree.ElementTree as ET
 import gym
 from gym import spaces
 
@@ -249,6 +250,8 @@ class MinecraftEnv(gym.Env):
 
     def _get_observation(self, world_state):
         if world_state.number_of_observations_since_last_state > 0:
+            if world_state.number_of_observations_since_last_state > 1:
+                logger.warn("Agent missed %d observations.", world_state.number_of_observations_since_last_state - 1)
             assert len(world_state.observations) == 1
             return json.loads(world_state.observations[0].text)
         else:
@@ -267,7 +270,11 @@ class MinecraftEnv(gym.Env):
         for error in world_state.errors:
             logger.warn(error.text)
         for msg in world_state.mission_control_messages:
-            logger.info(msg.text)
+            logger.debug(msg.text)
+            root = ET.fromstring(msg.text)
+            if root.tag == '{http://ProjectMalmo.microsoft.com}MissionEnded':
+                for el in root.findall('{http://ProjectMalmo.microsoft.com}HumanReadableStatus'):
+                    logger.info("Mission ended: %s", el.text)
 
         # sum rewards (actually there should be only one)
         reward = 0
@@ -313,3 +320,4 @@ class MinecraftEnv(gym.Env):
 
     def _seed(self, seed=None):
         self.mission_spec.setWorldSeed(str(seed))
+        return [seed]

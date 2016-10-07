@@ -1,0 +1,34 @@
+FROM quay.io/openai/vnc-base
+
+# install Malmo dependencies
+RUN apt-get update && apt-get install -y \
+    libboost-all-dev \
+    libpython2.7 \
+    openjdk-8-jdk \
+    lua5.1 \
+    libxerces-c3.1 \
+    liblua5.1-0-dev \
+    libav-tools \
+    python-tk \
+    python-imaging-tk \
+    wget \
+    unzip \
+    xvfb
+
+# download and unpack Malmo
+WORKDIR /root
+RUN wget https://github.com/Microsoft/malmo/releases/download/0.17.0/Malmo-0.17.0-Linux-Ubuntu-14.04-64bit.zip
+RUN unzip Malmo-0.17.0-Linux-Ubuntu-14.04-64bit.zip
+RUN rm Malmo-0.17.0-Linux-Ubuntu-14.04-64bit.zip
+RUN mv Malmo-0.17.0-Linux-Ubuntu-14.04-64bit Malmo
+ENV MALMO_XSD_PATH /root/Malmo/Schemas
+
+# precompile stuff
+RUN mkdir ~/.gradle && echo 'org.gradle.daemon=true\n' > ~/.gradle/gradle.properties
+WORKDIR /root/Malmo/Minecraft
+RUN ./gradlew setupDecompWorkspace
+RUN ./gradlew build
+
+# run Malmo 
+EXPOSE 10000
+ENTRYPOINT xvfb-run -s "-screen 0 1400x900x24" /root/Malmo/Minecraft/launchClient.sh

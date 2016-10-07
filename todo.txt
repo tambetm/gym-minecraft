@@ -1,4 +1,3 @@
-- run preliminary models
 - add task descriptions for other missions
 - package Minecraft as minecraft_py
 
@@ -9,6 +8,6 @@
   * there is no point in shutting down Minecraft in close(), that would make subsequent runs very slow
 - produce observation spaces automatically based on requested (or default) features
   * not used currently?
-- allow configuration of MissionRecordSpec
-  * kinda useless?
+  * how would you represent something like inventory or chat?
+  * expose them through info and let programmer decide if they want them and how to represent them
 - add support for AbsoluteCommands

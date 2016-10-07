@@ -1,6 +1,9 @@
 import logging
 import time
 import os
+import shlex
+import subprocess
+import signal
 
 import numpy as np
 import json
@@ -22,8 +25,6 @@ class MinecraftEnv(gym.Env):
     def __init__(self, mission_file):
         super(MinecraftEnv, self).__init__()
 
-        # TODO: start Minecraft process?
-
         self.agent_host = MalmoPython.AgentHost()
         assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets')
         mission_file = os.path.join(assets_dir, mission_file)
@@ -33,6 +34,7 @@ class MinecraftEnv(gym.Env):
         logger.info("Loaded mission: " + self.mission_spec.getSummary())
 
         self.client_pool = None
+        self.mc_process = None
 
     def _configure(self, max_retries=3, step_sleep=0, log_level=logging.INFO,
                    videoResolution=None, videoWithDepth=None,
@@ -43,7 +45,7 @@ class MinecraftEnv(gym.Env):
                    allowAbsoluteMovement=None, recordDestination=None,
                    recordObservations=None, recordRewards=None,
                    recordCommands=None, recordMP4=None,
-                   client_pool=None):
+                   client_pool=None, mc_command=None):
 
         self.max_retries = max_retries
         self.step_sleep = step_sleep
@@ -95,6 +97,17 @@ class MinecraftEnv(gym.Env):
             self.client_pool = MalmoPython.ClientPool()
             for client in client_pool:
                 self.client_pool.add(MalmoPython.ClientInfo(*client))
+
+        if mc_command:
+            FNULL = open(os.devnull, 'w')
+            cmdargs = shlex.split(mc_command)
+            self.mc_process = subprocess.Popen(cmdargs,
+                    # supress entire output
+                    stdout=FNULL, stderr=FNULL,
+                    # use process group, see http://stackoverflow.com/a/4791612/18576
+                    preexec_fn=os.setsid)
+            # give the Minecraft process enough time to start
+            time.sleep(40)
 
         # TODO: produce observation space dynamically based on requested features
 
@@ -251,7 +264,7 @@ class MinecraftEnv(gym.Env):
     def _get_observation(self, world_state):
         if world_state.number_of_observations_since_last_state > 0:
             if world_state.number_of_observations_since_last_state > 1:
-                logger.warn("Agent missed %d observations.", world_state.number_of_observations_since_last_state - 1)
+                logger.warn("Agent missed %d observation(s).", world_state.number_of_observations_since_last_state - 1)
             assert len(world_state.observations) == 1
             return json.loads(world_state.observations[0].text)
         else:
@@ -315,8 +328,9 @@ class MinecraftEnv(gym.Env):
             assert False, "Unknown render mode: " + mode
 
     def _close(self):
-        # TODO: shut down Minecraft process?
-        pass
+        if self.mc_process:
+            # send SIGTERM to entire process group, see http://stackoverflow.com/a/4791612/18576
+            os.killpg(os.getpgid(self.mc_process.pid), signal.SIGTERM)
 
     def _seed(self, seed=None):
         self.mission_spec.setWorldSeed(str(seed))

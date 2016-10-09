@@ -95,9 +95,12 @@ export PYTHONPATH=$PYTHONPATH:$HOME/Malmo/Python_Examples
 
 You can put the last two lines in your `~/.bashrc`.
 
-Also for rendering the game screen in human mode OpenCV (`cv2`) is needed. Installation of that is Python distribution specific, for example in Ubuntu `sudo apt-get install python-opencv`, in Anaconda `conda install opencv` and so on.
-
 You can also [run Malmo from Docker image](https://github.com/tambetm/gym-minecraft/wiki/Docker), but you still need to include `MalmoPython.so` in your `PYTHONPATH`.
+
+OpenAI Gym and Pygame are needed to run the environment. You can install them using
+```
+pip install gym pygame
+```
 
 ## Installation
 

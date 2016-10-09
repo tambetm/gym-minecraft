@@ -35,8 +35,11 @@ class MinecraftEnv(gym.Env):
 
         self.client_pool = None
         self.mc_process = None
+        self.screen = None
+        self.last_reward = 0
 
-    def _configure(self, max_retries=3, step_sleep=0, log_level=logging.INFO,
+    def _configure(self, client_pool=None, mc_command=None, log_level=logging.INFO,
+                   max_retries=3, step_sleep=0,
                    videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
                    observeFullInventory=None, observeGrid=None,
@@ -45,10 +48,11 @@ class MinecraftEnv(gym.Env):
                    allowAbsoluteMovement=None, recordDestination=None,
                    recordObservations=None, recordRewards=None,
                    recordCommands=None, recordMP4=None,
-                   client_pool=None, mc_command=None):
+                   gameMode=None, forceWorldReset=None):
 
         self.max_retries = max_retries
         self.step_sleep = step_sleep
+        self.forceWorldReset = forceWorldReset
         logger.setLevel(log_level)
 
         if videoResolution:
@@ -111,13 +115,13 @@ class MinecraftEnv(gym.Env):
 
         # TODO: produce observation space dynamically based on requested features
 
-        video_height = self.mission_spec.getVideoHeight(0)
-        video_width = self.mission_spec.getVideoWidth(0)
-        video_depth = self.mission_spec.getVideoChannels(0)
+        self.video_height = self.mission_spec.getVideoHeight(0)
+        self.video_width = self.mission_spec.getVideoWidth(0)
+        self.video_depth = self.mission_spec.getVideoChannels(0)
         self.observation_space = spaces.Box(low=0, high=255,
-                shape=(video_height, video_width, video_depth))
+                shape=(self.video_height, self.video_width, self.video_depth))
         # dummy image just for the first observation
-        self.last_image = np.zeros((video_height, video_width, video_depth))
+        self.last_image = np.zeros((self.video_height, self.video_width, self.video_depth))
 
         self._create_action_space()
 
@@ -131,6 +135,16 @@ class MinecraftEnv(gym.Env):
             self.mission_record_spec.recordCommands()
         if recordMP4:
             self.mission_record_spec.recordMP4(*recordMP4)
+
+        if gameMode:
+            if gameMode == "spectator":
+                self.mission_spec.setModeToSpectator()
+            elif gameMode == "creative":
+                self.mission_spec.setModeToCreative()
+            elif gameMode == "survival":
+                logger.warn("Cannot force survival mode, assuming it is the default.")
+            else:
+                assert False, "Unknown game mode: " + gameMode
 
     def _create_action_space(self):
         # collect different actions based on allowed commands
@@ -161,7 +175,12 @@ class MinecraftEnv(gym.Env):
                         discrete_actions.append(cmd + " 1")
                     else:
                         assert False, "Unknown discrete action " + cmd
-                # TODO: support for AbsoluteMovement
+                elif ch == "AbsoluteMovement":
+                    # TODO: support for AbsoluteMovement
+                    logger.warn("Absolute movement not supported, ignoring.")
+                elif ch == "Inventory":
+                    # TODO: support for Inventory
+                    logger.warn("Inventory management not supported, ignoring.")
                 else:
                     assert False, "Unknown commandhandler " + ch
 
@@ -186,6 +205,9 @@ class MinecraftEnv(gym.Env):
         logger.debug(self.action_space)
 
     def _reset(self):
+        # force new world
+        if self.forceWorldReset:
+            self.mission_spec.forceWorldReset()
         # this seemed to increase probability of success in first try
         time.sleep(0.1)
         # Attempt to start a mission
@@ -293,6 +315,7 @@ class MinecraftEnv(gym.Env):
         reward = 0
         for r in world_state.rewards:
             reward += r.getValue()
+        self.last_reward = reward
 
         # take the last frame from world state
         image = self._get_video_frame(world_state)
@@ -316,16 +339,25 @@ class MinecraftEnv(gym.Env):
         if mode == 'rgb_array':
             return self.last_image
         elif mode == 'human':
-            import cv2
+            import pygame
             if close:
-                cv2.destroyAllWindows()
+                pygame.quit()
             else:
-                # OpenCV expects images in BGR
-                image = self.last_image[..., ::-1]
-                cv2.imshow('render', image)
-                cv2.waitKey(1)  # wait the smallest amount possible - 1ms
+                if self.screen is None:
+                    pygame.init()
+                    self.screen = pygame.display.set_mode((self.video_width, self.video_height))
+                    self.font = pygame.font.SysFont("monospace", 32)
+                img = pygame.surfarray.make_surface(self.last_image.swapaxes(0, 1))
+                self.screen.blit(img, (0, 0))
+                if self.last_reward:
+                    label = self.font.render("+"+str(self.last_reward) if self.last_reward > 0 else str(self.last_reward), 1, (255,255,255))
+                    self.screen.blit(label, (0, 0))
+                pygame.display.update()
+
+                pygame.event.pump()
+                return pygame.key.get_pressed(), pygame.key.get_mods()
         else:
-            assert False, "Unknown render mode: " + mode
+            assert False, "Unsupported render mode: " + mode
 
     def _close(self):
         if self.mc_process:

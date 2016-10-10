@@ -353,9 +353,6 @@ class MinecraftEnv(gym.Env):
                     label = self.font.render("+"+str(self.last_reward) if self.last_reward > 0 else str(self.last_reward), 1, (255,255,255))
                     self.screen.blit(label, (0, 0))
                 pygame.display.update()
-
-                pygame.event.pump()
-                return pygame.key.get_pressed(), pygame.key.get_mods()
         else:
             assert False, "Unsupported render mode: " + mode
 

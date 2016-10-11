@@ -9,12 +9,12 @@ import numpy as np
 import json
 import xml.etree.ElementTree as ET
 import gym
-from gym import spaces
+from gym import spaces, error
 
 try:
     import MalmoPython
 except ImportError as e:
-    raise gym.error.DependencyNotInstalled("{}. (HINT: include MalmoPython.so in your PYTHONPATH".format(e))
+    raise error.DependencyNotInstalled("{}. (HINT: include MalmoPython.so in your PYTHONPATH".format(e))
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ class MinecraftEnv(gym.Env):
         self.mc_process = None
         self.screen = None
         self.last_reward = 0
+        self.show_reward = 0
 
     def _configure(self, client_pool=None, mc_command=None, log_level=logging.INFO,
                    max_retries=3, step_sleep=0,
@@ -97,21 +98,30 @@ class MinecraftEnv(gym.Env):
                     self.mission_spec.allowAbsoluteMovementCommand(cmd)
 
         if client_pool:
-            assert isinstance(client_pool, list), "client_pool must be list of tuples of (IP-address, port)"
+            if not isinstance(client_pool, list):
+                raise ValueError("client_pool must be list of tuples of (IP-address, port)")
             self.client_pool = MalmoPython.ClientPool()
             for client in client_pool:
                 self.client_pool.add(MalmoPython.ClientInfo(*client))
 
         if mc_command:
+            logger.info("Starting Minecraft process: " + mc_command)
             FNULL = open(os.devnull, 'w')
             cmdargs = shlex.split(mc_command)
             self.mc_process = subprocess.Popen(cmdargs,
                     # supress entire output
-                    stdout=FNULL, stderr=FNULL,
+                    stdout=subprocess.PIPE, stderr=FNULL,
                     # use process group, see http://stackoverflow.com/a/4791612/18576
                     preexec_fn=os.setsid)
-            # give the Minecraft process enough time to start
-            time.sleep(40)
+            # wait until Minecraft process has outputed "CLIENT enter state: DORMANT"
+            while True:
+                line = self.mc_process.stdout.readline()
+                if not line:
+                    raise EOFError("Minecraft process finished unexpectedly")
+                if "CLIENT enter state: DORMANT" in line:
+                    break
+            logger.info("Minecraft process ready")
+            self.mc_process.stdout = FNULL
 
         # TODO: produce observation space dynamically based on requested features
 
@@ -121,7 +131,7 @@ class MinecraftEnv(gym.Env):
         self.observation_space = spaces.Box(low=0, high=255,
                 shape=(self.video_height, self.video_width, self.video_depth))
         # dummy image just for the first observation
-        self.last_image = np.zeros((self.video_height, self.video_width, self.video_depth))
+        self.last_image = np.zeros((self.video_height, self.video_width, self.video_depth), dtype=np.uint8)
 
         self._create_action_space()
 
@@ -164,7 +174,7 @@ class MinecraftEnv(gym.Env):
                         multidiscrete_actions.append(cmd)
                         multidiscrete_action_ranges.append([0, 1])
                     else:
-                        assert False, "Unknown continuous action " + cmd
+                        raise ValueError("Unknown continuous action " + cmd)
                 elif ch == "DiscreteMovement":
                     if cmd in ["movenorth", "moveeast", "movesouth", "movewest"]:
                         discrete_actions.append(cmd + " 1")
@@ -174,7 +184,7 @@ class MinecraftEnv(gym.Env):
                     elif cmd in ["jump", "attack", "use"]:
                         discrete_actions.append(cmd + " 1")
                     else:
-                        assert False, "Unknown discrete action " + cmd
+                        raise ValueError(False, "Unknown discrete action " + cmd)
                 elif ch == "AbsoluteMovement":
                     # TODO: support for AbsoluteMovement
                     logger.warn("Absolute movement not supported, ignoring.")
@@ -182,7 +192,7 @@ class MinecraftEnv(gym.Env):
                     # TODO: support for Inventory
                     logger.warn("Inventory management not supported, ignoring.")
                 else:
-                    assert False, "Unknown commandhandler " + ch
+                    raise ValueError("Unknown commandhandler " + ch)
 
         # turn action lists into action spaces
         self.action_names = []
@@ -205,7 +215,7 @@ class MinecraftEnv(gym.Env):
         logger.debug(self.action_space)
 
     def _reset(self):
-        # force new world
+        # force new world each time
         if self.forceWorldReset:
             self.mission_spec.forceWorldReset()
         # this seemed to increase probability of success in first try
@@ -285,8 +295,8 @@ class MinecraftEnv(gym.Env):
 
     def _get_observation(self, world_state):
         if world_state.number_of_observations_since_last_state > 0:
-            if world_state.number_of_observations_since_last_state > 1:
-                logger.warn("Agent missed %d observation(s).", world_state.number_of_observations_since_last_state - 1)
+            if world_state.number_of_observations_since_last_state > len(world_state.observations):
+                logger.warn("Agent missed %d observation(s).", world_state.number_of_observations_since_last_state - len(world_state.observations))
             assert len(world_state.observations) == 1
             return json.loads(world_state.observations[0].text)
         else:
@@ -315,7 +325,9 @@ class MinecraftEnv(gym.Env):
         reward = 0
         for r in world_state.rewards:
             reward += r.getValue()
-        self.last_reward = reward
+        if reward:
+            self.last_reward = reward
+            self.show_reward = 10
 
         # take the last frame from world state
         image = self._get_video_frame(world_state)
@@ -339,7 +351,11 @@ class MinecraftEnv(gym.Env):
         if mode == 'rgb_array':
             return self.last_image
         elif mode == 'human':
-            import pygame
+            try:
+                import pygame
+            except ImportError as e:
+                raise error.DependencyNotInstalled("{}. (HINT: install pygame using `pip install pygame`".format(e))
+
             if close:
                 pygame.quit()
             else:
@@ -349,12 +365,13 @@ class MinecraftEnv(gym.Env):
                     self.font = pygame.font.SysFont("monospace", 32)
                 img = pygame.surfarray.make_surface(self.last_image.swapaxes(0, 1))
                 self.screen.blit(img, (0, 0))
-                if self.last_reward:
+                if self.show_reward > 0:
                     label = self.font.render("+"+str(self.last_reward) if self.last_reward > 0 else str(self.last_reward), 1, (255,255,255))
                     self.screen.blit(label, (0, 0))
+                    self.show_reward -= 1
                 pygame.display.update()
         else:
-            assert False, "Unsupported render mode: " + mode
+            raise error.UnsupportedMode("Unsupported render mode: " + mode)
 
     def _close(self):
         if self.mc_process:

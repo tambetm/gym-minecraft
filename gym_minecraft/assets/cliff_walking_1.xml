@@ -30,7 +30,7 @@
         <DrawBlock   x="4"   y="45"  z="12" type="lapis_block" />                           <!-- the destination marker -->
         <DrawItem    x="4"   y="46"  z="12" type="diamond" />                               <!-- another destination marker -->
       </DrawingDecorator>
-      <ServerQuitFromTimeUp timeLimitMs="1000000"/>
+      <ServerQuitFromTimeUp timeLimitMs="20000"/>
       <ServerQuitWhenAnyAgentFinishes/>
     </ServerHandlers>
   </ServerSection>
@@ -55,10 +55,10 @@
         <Block reward="-100.0" type="lava" behaviour="onceOnly"/>
         <Block reward="100.0" type="lapis_block" behaviour="onceOnly"/>
       </RewardForTouchingBlockType>
-      <RewardForSendingCommand reward="-1"/>
+      <!--RewardForSendingCommand reward="-1"/-->
       <AgentQuitFromTouchingBlockType>
-          <Block type="lava" />
-          <Block type="lapis_block" />
+          <Block type="lava" description="drowned_in_lava"/>
+          <Block type="lapis_block" description="found_goal"/>
       </AgentQuitFromTouchingBlockType>
     </AgentHandlers>
   </AgentSection>

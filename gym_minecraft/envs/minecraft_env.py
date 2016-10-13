@@ -12,9 +12,10 @@ import gym
 from gym import spaces, error
 
 try:
-    import MalmoPython
+    import minecraft_py
+    from minecraft_py import MalmoPython
 except ImportError as e:
-    raise error.DependencyNotInstalled("{}. (HINT: include MalmoPython.so in your PYTHONPATH".format(e))
+    raise error.DependencyNotInstalled("{}. (HINT: install minecraft_py from https://github.com/tambetm/minecraft-py".format(e))
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ class MinecraftEnv(gym.Env):
     def __init__(self, mission_file):
         super(MinecraftEnv, self).__init__()
 
+        minecraft_py.prepare_environment()
         self.agent_host = MalmoPython.AgentHost()
         assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets')
         mission_file = os.path.join(assets_dir, mission_file)
@@ -39,8 +41,7 @@ class MinecraftEnv(gym.Env):
         self.last_reward = 0
         self.show_reward = 0
 
-    def _configure(self, client_pool=None, mc_command=None, log_level=logging.INFO,
-                   max_retries=3, step_sleep=0,
+    def _configure(self, client_pool=None, start_minecraft=None, max_retries=3, step_sleep=0,
                    videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
                    observeFullInventory=None, observeGrid=None,
@@ -54,7 +55,6 @@ class MinecraftEnv(gym.Env):
         self.max_retries = max_retries
         self.step_sleep = step_sleep
         self.forceWorldReset = forceWorldReset
-        logger.setLevel(log_level)
 
         if videoResolution:
             if videoWithDepth:
@@ -104,24 +104,9 @@ class MinecraftEnv(gym.Env):
             for client in client_pool:
                 self.client_pool.add(MalmoPython.ClientInfo(*client))
 
-        if mc_command:
-            logger.info("Starting Minecraft process: " + mc_command)
-            FNULL = open(os.devnull, 'w')
-            cmdargs = shlex.split(mc_command)
-            self.mc_process = subprocess.Popen(cmdargs,
-                    # supress entire output
-                    stdout=subprocess.PIPE, stderr=FNULL,
-                    # use process group, see http://stackoverflow.com/a/4791612/18576
-                    preexec_fn=os.setsid)
-            # wait until Minecraft process has outputed "CLIENT enter state: DORMANT"
-            while True:
-                line = self.mc_process.stdout.readline()
-                if not line:
-                    raise EOFError("Minecraft process finished unexpectedly")
-                if "CLIENT enter state: DORMANT" in line:
-                    break
-            logger.info("Minecraft process ready")
-            self.mc_process.stdout = FNULL
+        if start_minecraft:
+            # TODO: should use port from client_pool? or first free port?
+            self.mc_process = minecraft_py.start()
 
         # TODO: produce observation space dynamically based on requested features
 
@@ -375,8 +360,7 @@ class MinecraftEnv(gym.Env):
 
     def _close(self):
         if self.mc_process:
-            # send SIGTERM to entire process group, see http://stackoverflow.com/a/4791612/18576
-            os.killpg(os.getpgid(self.mc_process.pid), signal.SIGTERM)
+            minecraft_py.stop(self.mc_process)
 
     def _seed(self, seed=None):
         self.mission_spec.setWorldSeed(str(seed))

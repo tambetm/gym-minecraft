@@ -77,55 +77,44 @@ MinecraftHard-v0<br/>
 
 Basically these are [original Malmö missions](https://github.com/Microsoft/malmo/raw/master/sample_missions/MalmoMissionTable_CurrentTasks_2016_06_14.pdf) with only `<PrioritiseOffscreenRendering>` added to speed up training.
 
-## Prerequisites
+## Installation
 
 1. Install the dependencies for your OS: [Windows](https://github.com/Microsoft/malmo/blob/master/doc/install_windows.md), [Linux](https://github.com/Microsoft/malmo/blob/master/doc/install_linux.md), [MacOSX](https://github.com/Microsoft/malmo/blob/master/doc/install_macosx.md). You can skip Torch, Mono and ALE parts.
 
-2. Download and unpack [the latest pre-built version for your OS](https://github.com/Microsoft/malmo/releases).
-
-3. Set `MALMO_XSD_PATH` to the location of schemas, i.e. 
-  ```shell
-export MALMO_XSD_PATH=$HOME/Malmo/Schemas
+2. Install [OpenAI Gym](https://github.com/openai/gym) and its dependencies.
+ ```
+pip install gym
 ```
 
-4. Set `PYTHONPATH` to the location of `MalmoPython.so`, i.e.
-  ```shell
-export PYTHONPATH=$PYTHONPATH:$HOME/Malmo/Python_Examples
+3. Download and install [minecraft_py](https://github.com/tambetm/minecraft-py).
+ ```
+git clone https://github.com/tambetm/minecraft-py.git
+cd minecraft-py
+# NB! `minecraft_py` should be installed to writable user directory, either in virtualenv or with `--user` option.
+python setup.py install
 ```
 
-You can put the last two lines in your `~/.bashrc`.
+4. Download and install `gym-minecraft`:
 
-You can also [run Malmo from Docker image](https://github.com/tambetm/gym-minecraft/wiki/Docker), but you still need to include `MalmoPython.so` in your `PYTHONPATH`.
-
-OpenAI Gym and Pygame are needed to run the environment. You can install them using
-```
-pip install gym pygame
-```
-
-## Installation
-
-```shell
+ ```
 git clone https://github.com/tambetm/gym-minecraft.git
 cd gym-minecraft
-pip install -e .
+python setup.py install
 ```
+
+ `gym-minecraft` should automatically download and install `pygame` that is needed for rendering the game window.
 
 ## Running
 
-1. Launch Minecraft:
-  ```shell
-cd ~/Malmo/Minecraft
-./launchClient.sh
-```
-You can leave Minecraft running for entire duration of your experiments. You also do not need to be in special menu in Minecraft, the Malmo mod switches the game mode automatically when it needs to.
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
-2. Run environment:
-
-  ```python
 import gym
 import gym_minecraft
 
 env = gym.make('MinecraftBasic-v0')
+env.configure(start_minecraft=True)
 env.reset()
 
 done = False
@@ -133,7 +122,11 @@ while not done:
         env.render()
         action = env.action_space.sample()
         obs, reward, done, info = env.step(action)
+
+env.close()
 ```
+
+NB! Running Minecraft for the first time might take a while as it downloads and compiles itself. Next time the startup time should be shorter, but still around 30 seconds. In active development phase you might want to start one permanent Minecraft process in background and remove `start_minecraft=True`, see [wiki](https://github.com/tambetm/gym-minecraft/wiki/Parallel).
 
 ## Overriding default settings
 
@@ -161,44 +154,3 @@ env.configure(videoResolution=[40, 30])
 ```
 
 More documentation about configuration options is coming, meanwhile refer to the source code.
-
-## Tuning the speed
-
-Following optimizations help to run the training process faster: 
-
-1. Turn up the framerate: in Minecraft go to `Options...`, `Video Settings...` and set `Max Framerate: Unlimited`.
-
-2. Make sure you have offscreen rendering enabled in mission XML file (should be for default missions).
-
-  ```xml
-  <ModSettings>
-      <PrioritiseOffscreenRendering>true</PrioritiseOffscreenRendering>
-  </ModSettings>
-```
-
-3. You can play with `MsPerTick` parameter, which basically determines how fast you can get new observations from the game. Default is 50ms per tick, which means 20 observations per second. You can lower it to 25ms, 10ms or even 1ms. 
-
-  ```xml
-  <ModSettings>
-      <MsPerTick>10</MsPerTick>
-  </ModSettings>
-```
-But beware that the bottleneck might be your training process - can it really handle more than 20 observations per second? Otherwise you would be wasting observations and moving forward in time in bigger steps (which might actually be good thing in some contexts). Also the timeout in missions still counts each tick as 50ms, so actually your missions time out faster.
-
-## Running multiple instances in parallel
-
-You can have several Minecraft instances serving pool of agents. First you need to start number of Minecraft processes on different ports:
-
-```shell
-cd ~/Malmo/Minecraft
-./launchClient.sh -port 10000
-./launchClient.sh -port 10001
-```
-
-Then set up client pool when configuring the environment:
-```python
-env = gym.make('MinecraftBasic-v0')
-env.configure(client_pool=[("localhost", 10000), ("localhost", 10001)])
-```
-
-Malmo will automatically use the first free Minecraft instance from the list.

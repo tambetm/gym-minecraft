@@ -104,12 +104,21 @@ python setup.py install
 
  `gym-minecraft` should automatically download and install `pygame` that is needed for rendering the game window.
 
-## Running
-
-```python
+5. Run once following snippet:
+ ```
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
+import minecraft_py
+
+proc, port = minecraft_py.start()
+minecraft_py.stop(proc)
+```
+ Basically Minecraft downloads and compiles everything on first start, this snippet just starts `minecraft_py` in debug mode, so you can see when Minecraft gets stuck.
+
+## Running
+
+```python
 import gym
 import gym_minecraft
 

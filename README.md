@@ -153,4 +153,4 @@ env = gym.make('MinecraftBasic-v0')
 env.configure(videoResolution=[40, 30])
 ```
 
-More documentation about configuration options is coming, meanwhile refer to the source code.
+More documentation about configuration options is in [wiki](https://github.com/tambetm/gym-minecraft/wiki/Configure).

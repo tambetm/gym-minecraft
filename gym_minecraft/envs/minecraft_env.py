@@ -96,16 +96,18 @@ class MinecraftEnv(gym.Env):
                 for cmd in allowAbsoluteMovement:
                     self.mission_spec.allowAbsoluteMovementCommand(cmd)
 
+        if start_minecraft:
+            # start Minecraft process assigning port dynamically
+            self.mc_process, port = minecraft_py.start()
+            logger.info("Started Minecraft on port %d, overriding client_pool.", port)
+            client_pool = [('127.0.0.1', port)]
+
         if client_pool:
             if not isinstance(client_pool, list):
                 raise ValueError("client_pool must be list of tuples of (IP-address, port)")
             self.client_pool = MalmoPython.ClientPool()
             for client in client_pool:
                 self.client_pool.add(MalmoPython.ClientInfo(*client))
-
-        if start_minecraft:
-            # TODO: should use port from client_pool? or first free port?
-            self.mc_process = minecraft_py.start()
 
         # TODO: produce observation space dynamically based on requested features
 

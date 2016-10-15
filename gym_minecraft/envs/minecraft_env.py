@@ -13,7 +13,7 @@ from gym import spaces, error
 
 try:
     import minecraft_py
-    from minecraft_py import MalmoPython
+    import MalmoPython
 except ImportError as e:
     raise error.DependencyNotInstalled("{}. (HINT: install minecraft_py from https://github.com/tambetm/minecraft-py".format(e))
 
@@ -26,7 +26,6 @@ class MinecraftEnv(gym.Env):
     def __init__(self, mission_file):
         super(MinecraftEnv, self).__init__()
 
-        minecraft_py.prepare_environment()
         self.agent_host = MalmoPython.AgentHost()
         assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets')
         mission_file = os.path.join(assets_dir, mission_file)

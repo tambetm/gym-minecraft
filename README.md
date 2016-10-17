@@ -102,7 +102,7 @@ cd gym-minecraft
 python setup.py install
 ```
 
- `gym-minecraft` should automatically download and install `pygame` that is needed for rendering the game window.
+ `gym-minecraft` needs `pygame` to render Minecraft screen. It is best to have pygame installed via your system commands, i.e. `sudo apt-get install python-pygame` or `conda install pygame`. Otherwise setup will automatically download and compile `pygame`. This might need some additional dependencies though, see instructions for [Ubuntu](http://www.pygame.org/wiki/CompileUbuntu), [OSX](http://pygame.org/wiki/MacCompile) or [Windows](http://pygame.org/wiki/CompileWindows).
 
 5. Run once following snippet:
  ```

@@ -29,6 +29,7 @@ WORKDIR /root/Malmo/Minecraft
 RUN ./gradlew setupDecompWorkspace
 RUN ./gradlew build
 
-# run Malmo 
+# run Malmo
 EXPOSE 10000
-ENTRYPOINT xvfb-run -s "-screen 0 1400x900x24" /root/Malmo/Minecraft/launchClient.sh
+COPY run.sh /root/
+ENTRYPOINT ["/root/run.sh", "/root/Malmo/Minecraft/launchClient.sh"]

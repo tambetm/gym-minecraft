@@ -40,7 +40,8 @@ class MinecraftEnv(gym.Env):
         self.last_reward = 0
         self.show_reward = 0
 
-    def _configure(self, client_pool=None, start_minecraft=None, max_retries=3, step_sleep=0,
+    def _configure(self, client_pool=None, start_minecraft=None, max_retries=3, 
+                   step_sleep=0, skip_steps=0,
                    videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
                    observeFullInventory=None, observeGrid=None,
@@ -53,6 +54,7 @@ class MinecraftEnv(gym.Env):
 
         self.max_retries = max_retries
         self.step_sleep = step_sleep
+        self.skip_steps = skip_steps
         self.forceWorldReset = forceWorldReset
 
         if videoResolution:
@@ -258,7 +260,7 @@ class MinecraftEnv(gym.Env):
         while True:
             time.sleep(self.step_sleep)  # TODO: how long this should be?
             world_state = self.agent_host.peekWorldState()
-            if world_state.number_of_observations_since_last_state or not world_state.is_mission_running:
+            if world_state.number_of_observations_since_last_state > self.skip_steps or not world_state.is_mission_running:
                 break
 
         return self.agent_host.getWorldState()
@@ -281,8 +283,9 @@ class MinecraftEnv(gym.Env):
 
     def _get_observation(self, world_state):
         if world_state.number_of_observations_since_last_state > 0:
-            if world_state.number_of_observations_since_last_state > len(world_state.observations):
-                logger.warn("Agent missed %d observation(s).", world_state.number_of_observations_since_last_state - len(world_state.observations))
+            missed = world_state.number_of_observations_since_last_state - len(world_state.observations) - self.skip_steps
+            if missed > 0:
+                logger.warn("Agent missed %d observation(s).", missed)
             assert len(world_state.observations) == 1
             return json.loads(world_state.observations[0].text)
         else:

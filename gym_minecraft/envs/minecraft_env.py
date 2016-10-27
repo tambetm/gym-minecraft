@@ -1,9 +1,6 @@
 import logging
 import time
 import os
-import shlex
-import subprocess
-import signal
 
 import numpy as np
 import json
@@ -40,8 +37,8 @@ class MinecraftEnv(gym.Env):
         self.last_reward = 0
         self.show_reward = 0
 
-    def _configure(self, client_pool=None, start_minecraft=None, max_retries=3, 
-                   step_sleep=0, skip_steps=0,
+    def _configure(self, client_pool=None, start_minecraft=None,
+                   max_retries=90, retry_sleep=10, step_sleep=0, skip_steps=0,
                    videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
                    observeFullInventory=None, observeGrid=None,
@@ -53,6 +50,7 @@ class MinecraftEnv(gym.Env):
                    gameMode=None, forceWorldReset=None):
 
         self.max_retries = max_retries
+        self.retry_sleep = retry_sleep
         self.step_sleep = step_sleep
         self.skip_steps = skip_steps
         self.forceWorldReset = forceWorldReset
@@ -180,7 +178,7 @@ class MinecraftEnv(gym.Env):
                     # TODO: support for Inventory
                     logger.warn("Inventory management not supported, ignoring.")
                 else:
-                    raise ValueError("Unknown commandhandler " + ch)
+                    logger.warn("Unknown commandhandler " + ch)
 
         # turn action lists into action spaces
         self.action_names = []
@@ -209,7 +207,7 @@ class MinecraftEnv(gym.Env):
         # this seemed to increase probability of success in first try
         time.sleep(0.1)
         # Attempt to start a mission
-        for retry in range(self.max_retries):
+        for retry in range(self.max_retries + 1):
             try:
                 if self.client_pool:
                     self.agent_host.startMission(self.mission_spec, self.client_pool, self.mission_record_spec, 0, "experiment_id")
@@ -217,12 +215,13 @@ class MinecraftEnv(gym.Env):
                     self.agent_host.startMission(self.mission_spec, self.mission_record_spec)
                 break
             except RuntimeError as e:
-                if retry == self.max_retries - 1:
+                if retry == self.max_retries:
                     logger.error("Error starting mission: "+str(e))
                     raise
                 else:
                     logger.warn("Error starting mission: "+str(e))
-                    time.sleep(2)
+                    logger.info("Sleeping for %d seconds...", self.retry_sleep)
+                    time.sleep(self.retry_sleep)
 
         # Loop until mission starts:
         logger.info("Waiting for the mission to start")
@@ -363,7 +362,7 @@ class MinecraftEnv(gym.Env):
             raise error.UnsupportedMode("Unsupported render mode: " + mode)
 
     def _close(self):
-        if self.mc_process:
+        if hasattr(self, 'mc_process') and self.mc_process:
             minecraft_py.stop(self.mc_process)
 
     def _seed(self, seed=None):

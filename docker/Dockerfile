@@ -17,10 +17,10 @@ RUN apt-get update && apt-get install -y \
 
 # download and unpack Malmo
 WORKDIR /root
-RUN wget https://github.com/Microsoft/malmo/releases/download/0.17.0/Malmo-0.17.0-Linux-Ubuntu-14.04-64bit.zip
-RUN unzip Malmo-0.17.0-Linux-Ubuntu-14.04-64bit.zip
-RUN rm Malmo-0.17.0-Linux-Ubuntu-14.04-64bit.zip
-RUN mv Malmo-0.17.0-Linux-Ubuntu-14.04-64bit Malmo
+RUN wget https://github.com/Microsoft/malmo/releases/download/0.18.0/Malmo-0.18.0-Linux-Ubuntu-15.10-64bit.zip
+RUN unzip Malmo-0.18.0-Linux-Ubuntu-15.10-64bit.zip
+RUN rm Malmo-0.18.0-Linux-Ubuntu-15.10-64bit.zip
+RUN mv Malmo-0.18.0-Linux-Ubuntu-15.10-64bit Malmo
 ENV MALMO_XSD_PATH /root/Malmo/Schemas
 
 # precompile stuff

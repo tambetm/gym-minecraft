@@ -37,7 +37,7 @@ class MinecraftEnv(gym.Env):
         self.last_reward = 0
         self.show_reward = 0
 
-    def _configure(self, client_pool=None, start_minecraft=None,
+    def _configure(self, client_pool=None, start_minecraft=None, continuous_discrete=True,
                    max_retries=90, retry_sleep=10, step_sleep=0, skip_steps=0,
                    videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
@@ -54,6 +54,7 @@ class MinecraftEnv(gym.Env):
         self.step_sleep = step_sleep
         self.skip_steps = skip_steps
         self.forceWorldReset = forceWorldReset
+        self.continuous_discrete = continuous_discrete
 
         if videoResolution:
             if videoWithDepth:
@@ -155,10 +156,18 @@ class MinecraftEnv(gym.Env):
                 logger.debug(ch + ":" + cmd)
                 if ch == "ContinuousMovement":
                     if cmd in ["move", "strafe", "pitch", "turn"]:
-                        continuous_actions.append(cmd)
+                        if self.continuous_discrete:
+                            discrete_actions.append(cmd + " 1")
+                            discrete_actions.append(cmd + " -1")
+                        else:
+                            continuous_actions.append(cmd)
                     elif cmd in ["crouch", "jump", "attack", "use"]:
-                        multidiscrete_actions.append(cmd)
-                        multidiscrete_action_ranges.append([0, 1])
+                        if self.continuous_discrete:
+                            discrete_actions.append(cmd + " 1")
+                            discrete_actions.append(cmd + " 0")
+                        else:
+                            multidiscrete_actions.append(cmd)
+                            multidiscrete_action_ranges.append([0, 1])
                     else:
                         raise ValueError("Unknown continuous action " + cmd)
                 elif ch == "DiscreteMovement":

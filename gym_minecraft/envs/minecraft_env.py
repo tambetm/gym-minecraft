@@ -26,10 +26,7 @@ class MinecraftEnv(gym.Env):
         self.agent_host = MalmoPython.AgentHost()
         assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets')
         mission_file = os.path.join(assets_dir, mission_file)
-        logger.info("Loading mission from " + mission_file)
-        mission_xml = open(mission_file, 'r').read()
-        self.mission_spec = MalmoPython.MissionSpec(mission_xml, True)
-        logger.info("Loaded mission: " + self.mission_spec.getSummary())
+        self._load_mission(mission_file)
 
         self.client_pool = None
         self.mc_process = None
@@ -37,7 +34,15 @@ class MinecraftEnv(gym.Env):
         self.last_reward = 0
         self.show_reward = 0
 
-    def _configure(self, client_pool=None, start_minecraft=None, continuous_discrete=True,
+    def _load_mission(self, mission_file):
+        logger.info("Loading mission from " + mission_file)
+        mission_xml = open(mission_file, 'r').read()
+        self.mission_spec = MalmoPython.MissionSpec(mission_xml, True)
+        logger.info("Loaded mission: " + self.mission_spec.getSummary())
+
+    def _configure(self, mission_file=None, mission_spec=None,
+                   client_pool=None, start_minecraft=None,
+                   continuous_discrete=True, add_noop_command=None,
                    max_retries=90, retry_sleep=10, step_sleep=0, skip_steps=0,
                    videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
@@ -55,6 +60,14 @@ class MinecraftEnv(gym.Env):
         self.skip_steps = skip_steps
         self.forceWorldReset = forceWorldReset
         self.continuous_discrete = continuous_discrete
+        self.add_noop_command = add_noop_command
+
+        # backdoor to sneak in our own missions
+        if mission_file:
+            self._load_mission(mission_file)
+
+        if mission_spec:
+            self.mission_spec = mission_spec
 
         if videoResolution:
             if videoWithDepth:
@@ -149,6 +162,9 @@ class MinecraftEnv(gym.Env):
         discrete_actions = []
         multidiscrete_actions = []
         multidiscrete_action_ranges = []
+        if self.add_noop_command:
+            # add NOOP command
+            discrete_actions.append("move 0\nturn 0")
         chs = self.mission_spec.getListOfCommandHandlers(0)
         for ch in chs:
             cmds = self.mission_spec.getAllowedCommands(0, ch)

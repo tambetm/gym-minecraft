@@ -29,6 +29,9 @@ WORKDIR /root/Malmo/Minecraft
 RUN ./gradlew setupDecompWorkspace
 RUN ./gradlew build
 
+# unlimited framerate settings
+COPY options.txt /root/Malmo/Minecraft/run
+
 # run Malmo
 EXPOSE 10000
 COPY run.sh /root/

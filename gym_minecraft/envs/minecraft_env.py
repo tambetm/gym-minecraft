@@ -41,7 +41,7 @@ class MinecraftEnv(gym.Env):
     def _configure(self, mission_file=None, mission_spec=None,
                    client_pool=None, start_minecraft=None,
                    continuous_discrete=True, add_noop_command=None,
-                   max_retries=90, retry_sleep=10, step_sleep=0, skip_steps=0,
+                   max_retries=90, retry_sleep=10, step_sleep=0.001, skip_steps=0,
                    videoResolution=None, videoWithDepth=None,
                    observeRecentCommands=None, observeHotBar=None,
                    observeFullInventory=None, observeGrid=None,

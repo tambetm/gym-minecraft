@@ -31,8 +31,6 @@ class MinecraftEnv(gym.Env):
         self.client_pool = None
         self.mc_process = None
         self.screen = None
-        self.last_reward = 0
-        self.show_reward = 0
 
     def _load_mission(self, mission_file):
         logger.info("Loading mission from " + mission_file)
@@ -338,9 +336,6 @@ class MinecraftEnv(gym.Env):
         reward = 0
         for r in world_state.rewards:
             reward += r.getValue()
-        if reward:
-            self.last_reward = reward
-            self.show_reward = 10
 
         # take the last frame from world state
         image = self._get_video_frame(world_state)
@@ -374,14 +369,12 @@ class MinecraftEnv(gym.Env):
             else:
                 if self.screen is None:
                     pygame.init()
-                    self.screen = pygame.display.set_mode((self.video_width, self.video_height))
-                    self.font = pygame.font.SysFont("monospace", 32)
+                    self.screen_width = max(self.video_width, 160)
+                    self.screen_height = max(self.video_height, 120)
+                    self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
                 img = pygame.surfarray.make_surface(self.last_image.swapaxes(0, 1))
+                img = pygame.transform.scale(img, (self.screen_width, self.screen_height))
                 self.screen.blit(img, (0, 0))
-                if self.show_reward > 0:
-                    label = self.font.render("+"+str(self.last_reward) if self.last_reward > 0 else str(self.last_reward), 1, (255,255,255))
-                    self.screen.blit(label, (0, 0))
-                    self.show_reward -= 1
                 pygame.display.update()
         else:
             raise error.UnsupportedMode("Unsupported render mode: " + mode)

@@ -231,16 +231,16 @@ add_task(
     summary='Eat a healthy diet!',
     description="""
 A flat world where some food objects are scattered near the starting position.
-The good ones must be eaten but not the bad owns. 
+The good ones must be eaten but not the bad owns.
 
 Goal:
-Eating as much as good food items as possible. 
+Eating as much as good food items as possible.
 
 Rewards:
 Dense rewards. Positive (+2) if agent eats any of "fish porkchop beef chicken
 rabbit mutton", positive (+1) if agent eats any of "potato egg carrot",
 negative (-1) if agent eats any of "apple melon" and negative (-2) if agent
-eats "sugar cake cookie pumpkin_pie". 
+eats "sugar cake cookie pumpkin_pie".
 
 End:
 Task ends if the timeLimitMs=15000 (15 sec.) is reached or agent killed.
@@ -252,7 +252,7 @@ Actions:
 Possible actions given by "ContinuousMovementCommand" included in "survival
 mode". So actions are "move", "strafe", "pitch", "turn", "jump", "crouch",
 "use" and "hotbar.X". Action "attack" is forbidden with a "deny-list".
-Inventory empty initially. Only moving on the flat surface required. 
+Inventory empty initially. Only moving on the flat surface required.
 """
 )
 
@@ -262,17 +262,17 @@ add_task(
     summary='Burning lava!',
     description="""
 A cliff of size 12x3 sandstone blocks surrounded by burning lava. Agent must go
-from starting block to destination block without following in the lava. 
+from starting block to destination block without following in the lava.
 
 Goal:
 The task instance is considered complete if the agent goes from starting
-position ("cobblestone") and steps over a special destination block (blue 
-"lapis_block") without following in the lava. 
+position ("cobblestone") and steps over a special destination block (blue
+"lapis_block") without following in the lava.
 
 Rewards:
 Sparse rewards. Negative in lava (-100), positive if target block
 ("lapis_block") touched (+100), and slightly negative (-1) for any action done.
-No (negative) reward if out of time. 
+No (negative) reward if out of time.
 
 End:
 Task ends if either when fallen in the lava or the destination block is
@@ -280,7 +280,7 @@ reached. Or if the timeLimitMs=20000 (20 sec.) is reached.
 
 Observability:
 Partial observability for ("ObservationFromGrid", the adjacent cell where the
-agent is located) and partial/total for the 3D view ("VideoProducer", 
+agent is located) and partial/total for the 3D view ("VideoProducer",
 screenshot view). Background is a grey room, surrounding the lava. There are no
 torches around but the lava produces some light. Currently using VideoProducer
 (640x480).
@@ -288,7 +288,7 @@ torches around but the lava produces some light. Currently using VideoProducer
 Actions:
 Possible actions given by "ContinuousMovementCommand" included included in
 "survival mode". So actions are "move", "strafe", "pitch", "turn", "jump",
-"crouch", "use" and "hotbar.X". Action "attack" is forbidden with a 
+"crouch", "use" and "hotbar.X". Action "attack" is forbidden with a
 "deny-list". Inventory empty initially. Only moving on the flat surface
 required.
 """
@@ -304,7 +304,7 @@ The agent appears in a maze of size 20x20. Mazes are within walls.
 Goal:
 The goal must be learnt from rewards. The agent appears at starting position
 (emerald_block) and has to traverse the maze to reach the target position
-(redstone_block). 
+(redstone_block).
 
 Rewards:
 Sparse rewards. Negative if dead (-10000), positive if the target block is
@@ -321,7 +321,7 @@ Possible actions given by "ContinuousMovementCommand" included in "survival
 mode". So actions are "move", "strafe", "pitch", "turn", "jump", "crouch",
 "use" and "hotbar.X". Action "attack" is forbidden with a "deny-list".
 Inventory empty initially. Only moving on the flat surface required (jumping
-is useless). 
+is useless).
 """
 )
 
@@ -332,15 +332,15 @@ add_task(
     description="""
 The agent appears in a maze of size 64x64. Mazes are different as they can be
 labyrinths with walls, or walking on convoluted cliffs surrounded by lava or
-water. 
+water.
 
 Goal:
 The agent appears at starting position (emerald_block) and has to traverse the
-maze to reach the target position (redstone_block). 
+maze to reach the target position (redstone_block).
 
 Rewards:
 Sparse rewards. Negative if dead (-10000), positive if the target block is
-touched (+1000) and negative if the time is over (-1000). 
+touched (+1000) and negative if the time is over (-1000).
 
 End:
 Task ends if the timeLimitMs=100000 (100 sec.) is reached or killed.
@@ -406,12 +406,12 @@ Four rooms in a row of approximately the same size connected by openings or
 doors (with switches to open or not). All rooms are at the same level. There
 might also be lava and water that have to be surrounded. There is a target
 block placed somewhere in the last room. Spawning zombies, witches, etc.,
-disabled. 
+disabled.
 
 Goal:
 The task instance is considered complete if the agent goes from starting
 position to the special block (any of "gold_block diamond_block
-redstone_block"). 
+redstone_block").
 
 Rewards:
 Sparse rewards. Negative if dead (-10000), although it is very difficult to get
@@ -421,7 +421,7 @@ block.
 
 Ends:
 Task ends if target block is reached. Or if the timeLimitMs=45000 (45 sec.) is
-reached. 
+reached.
 
 Observability:
 Partial observability. Currently using VideoProducer (320x240).
@@ -448,18 +448,18 @@ disabled.
 
 Goal:
 The task instance is considered complete if the agent goes from starting
-position to the special block (any of "gold_block diamond_block 
-redstone_block"). 
+position to the special block (any of "gold_block diamond_block
+redstone_block").
 
 Rewards:
 Sparse rewards. Negative if dead (-10000), although it is very difficult to get
 killed, Positive if the target block is touched (+4000) and negative if the
 time is over (-1000). There's a small reward (+20) for touching the target
-block. 
+block.
 
 Ends:
 Task ends if target block is reached. Or if the timeLimitMs=45000 (45 sec.) is
-reached. 
+reached.
 
 Observability:
 Partial observability. Currently using VideoProducer (320x240).
@@ -482,7 +482,7 @@ Two rooms (one above the other) of different sizes connected by a stair of
 blocks (where steps are not consecutive and one can fall). Rooms are at
 different levels. There are some small walls with lava around that have to be
 jumped. There is a target block placed somewhere in the upstairs room. Spawning
-zombies, witches, etc., disabled. 
+zombies, witches, etc., disabled.
 
 Goal:
 The task instance is considered complete if the agent goes from starting
@@ -493,11 +493,11 @@ Rewards:
 Sparse rewards. Negative if dead (-10000), although it is very difficult to get
 killed, Positive if the target block is touched (+1000) and negative if the
 time is over (-1000). There's a small reward (+20) for touching the target
-block. 
+block.
 
 Ends:
 Task ends if target block is reached. Or if the timeLimitMs=30000 (30 sec.) is
-reached. 
+reached.
 
 Observability:
 Partial observability. Currently using VideoProducer (320x240).
@@ -518,7 +518,7 @@ add_task(
 Three rooms (each above the other) of similar size connected by stairs (with a
 corner) and a straight vertical ladder. The three rooms are at different
 levels. There is a target block placed somewhere in the topmost room. Spawning
-zombies, witches, etc., disabled. 
+zombies, witches, etc., disabled.
 
 Goal:
 The task instance is considered complete if the agent goes from starting
@@ -529,7 +529,7 @@ Rewards:
 Sparse rewards. Negative if dead (-10000), although it is very difficult to get
 killed, Positive if the target block is touched (+8000) and negative if the
 time is over (-1000). There's a small reward (+20) for touching the target
-block. 
+block.
 
 Ends:
 Task ends if target block is reached. Or if the timeLimitMs=45000 (45 sec.) is
@@ -555,22 +555,22 @@ add_task(
 Several rooms of different sizes connected by doors (with switches to open or
 not) and stairs or ladders. Rooms are at different levels. There might also be
 lava around and some small walls that have to be jumped. There is a target
-block placed somewhere in one room. Spawning zombies, witches, etc., disabled. 
+block placed somewhere in one room. Spawning zombies, witches, etc., disabled.
 
 Goal:
 The task instance is considered complete if the agent goes from starting
 position to the special block (any of "gold_block diamond_block
-redstone_block"). 
+redstone_block").
 
 Rewards:
 Sparse rewards. Negative if dead (-10000), although it is very difficult to get
 killed, Positive if the target block is touched (+1000) and negative if the
 time is over (-1000). There's a small reward (+20) for touching the target
-block. 
+block.
 
 Ends:
 Task ends if target block is reached. Or if the timeLimitMs=30000 (30 sec.) is
-reached. 
+reached.
 
 Observability:
 Partial observability. Currently using VideoProducer (320x240).
@@ -580,7 +580,7 @@ Possible actions given by "ContinuousMovementCommand" included in "survival
 mode". So actions are "move", "strafe", "pitch", "turn", "jump", "crouch",
 "use" and "hotbar.X". Action "attack" is forbidden with a "deny-list".
 Inventory empty initially. Only moving (including pitching up for climbing
-ladders) and jumping are necessary. 
+ladders) and jumping are necessary.
 """
 )
 
@@ -593,22 +593,22 @@ add_task(
 and stairs or ladders. There might also be lava and water around and some small
 walls that have to be jumped, also some rooms are also accessible by jumping
 from blocks to blocks. There is a target block placed somewhere in one room.
-Spawning zombies, witches, etc., disabled. 
+Spawning zombies, witches, etc., disabled.
 
 Goal:
 The task instance is considered complete if the agent goes from starting
 position to the special block (any of "gold_block diamond_block
-redstone_block"). 
+redstone_block").
 
 Rewards:
 Sparse rewards. Negative if dead (-10000), although it is very difficult to get
 killed, Positive if the target block is touched (+16000) and negative if the
 time is over (-1000). There's a small reward (+20) for touching the target
-block. 
+block.
 
 Ends:
 Task ends if target block is reached. Or if the timeLimitMs=90000 (90 sec.) is
-reached. 
+reached.
 
 Observability:
 Partial observability. Currently using VideoProducer (320x240).
@@ -636,7 +636,7 @@ Spawning zombies, witches, etc., disabled.
 Goal:
 The task instance is considered complete if the agent goes from starting
 position to the special block (any of "gold_block diamond_block
-redstone_block"). 
+redstone_block").
 
 Rewards:
 Sparse rewards. Negative if dead (-10000), although it is very difficult to get

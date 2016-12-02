@@ -276,6 +276,8 @@ class MinecraftEnv(gym.Env):
                 for cmd, val in zip(cmds, acts):
                     logger.debug(cmd + " " + str(val))
                     self.agent_host.sendCommand(cmd + " " + str(val))
+            else:
+                logger.warn("Unknown action space for %s, ignoring." % cmds)
 
     def _get_world_state(self):
         # wait till we have got at least one video frame or mission has ended
@@ -369,11 +371,8 @@ class MinecraftEnv(gym.Env):
             else:
                 if self.screen is None:
                     pygame.init()
-                    self.screen_width = max(self.video_width, 160)
-                    self.screen_height = max(self.video_height, 120)
-                    self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+                    self.screen = pygame.display.set_mode((self.video_width, self.video_height))
                 img = pygame.surfarray.make_surface(self.last_image.swapaxes(0, 1))
-                img = pygame.transform.scale(img, (self.screen_width, self.screen_height))
                 self.screen.blit(img, (0, 0))
                 pygame.display.update()
         else:

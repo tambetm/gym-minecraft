@@ -26,31 +26,33 @@ class MinecraftEnv(gym.Env):
         self.agent_host = MalmoPython.AgentHost()
         assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets')
         mission_file = os.path.join(assets_dir, mission_file)
-        self._load_mission(mission_file)
+        self.load_mission_file(mission_file)
 
         self.client_pool = None
         self.mc_process = None
         self.screen = None
 
-    def _load_mission(self, mission_file):
+    def load_mission_file(self, mission_file):
         logger.info("Loading mission from " + mission_file)
         mission_xml = open(mission_file, 'r').read()
+        self.load_mission_xml(mission_xml)
+
+    def load_mission_xml(self, mission_xml):
         self.mission_spec = MalmoPython.MissionSpec(mission_xml, True)
         logger.info("Loaded mission: " + self.mission_spec.getSummary())
 
-    def _configure(self, mission_file=None, mission_spec=None,
-                   client_pool=None, start_minecraft=None,
-                   continuous_discrete=True, add_noop_command=None,
-                   max_retries=90, retry_sleep=10, step_sleep=0.001, skip_steps=0,
-                   videoResolution=None, videoWithDepth=None,
-                   observeRecentCommands=None, observeHotBar=None,
-                   observeFullInventory=None, observeGrid=None,
-                   observeDistance=None, observeChat=None,
-                   allowContinuousMovement=None, allowDiscreteMovement=None,
-                   allowAbsoluteMovement=None, recordDestination=None,
-                   recordObservations=None, recordRewards=None,
-                   recordCommands=None, recordMP4=None,
-                   gameMode=None, forceWorldReset=None):
+    def init(self, client_pool=None, start_minecraft=None,
+             continuous_discrete=True, add_noop_command=None,
+             max_retries=90, retry_sleep=10, step_sleep=0.001, skip_steps=0,
+             videoResolution=None, videoWithDepth=None,
+             observeRecentCommands=None, observeHotBar=None,
+             observeFullInventory=None, observeGrid=None,
+             observeDistance=None, observeChat=None,
+             allowContinuousMovement=None, allowDiscreteMovement=None,
+             allowAbsoluteMovement=None, recordDestination=None,
+             recordObservations=None, recordRewards=None,
+             recordCommands=None, recordMP4=None,
+             gameMode=None, forceWorldReset=None):
 
         self.max_retries = max_retries
         self.retry_sleep = retry_sleep
@@ -59,13 +61,6 @@ class MinecraftEnv(gym.Env):
         self.forceWorldReset = forceWorldReset
         self.continuous_discrete = continuous_discrete
         self.add_noop_command = add_noop_command
-
-        # backdoor to sneak in our own missions
-        if mission_file:
-            self._load_mission(mission_file)
-
-        if mission_spec:
-            self.mission_spec = mission_spec
 
         if videoResolution:
             if videoWithDepth:

@@ -275,9 +275,9 @@ class MinecraftEnv(gym.Env):
                 logger.warn("Unknown action space for %s, ignoring." % cmds)
 
     def _get_world_state(self):
-        # wait till we have got at least one video frame or mission has ended
+        # wait till we have got at least one observation or mission has ended
         while True:
-            time.sleep(self.step_sleep)  # TODO: how long this should be?
+            time.sleep(self.step_sleep)  # wait for 1ms to not consume entire CPU
             world_state = self.agent_host.peekWorldState()
             if world_state.number_of_observations_since_last_state > self.skip_steps or not world_state.is_mission_running:
                 break

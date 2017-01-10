@@ -123,7 +123,7 @@ import gym
 import gym_minecraft
 
 env = gym.make('MinecraftBasic-v0')
-env.configure(start_minecraft=True)
+env.init(start_minecraft=True)
 env.reset()
 
 done = False
@@ -139,27 +139,27 @@ NB! Running Minecraft for the first time might take a while as it downloads and 
 
 ## Overriding default settings
 
-The default settings for environments might not be optimal for you. Luckily you can easily override them using `configure()`.
+The default settings for environments might not be optimal for you. Luckily you can easily override them using `init()`.
 
 For example to use discrete actions instead of continuous actions:
 
 ```python
 env = gym.make('MinecraftBasic-v0')
-env.configure(allowDiscreteMovement=["move", "turn"])
+env.init(allowDiscreteMovement=["move", "turn"])
 ```
 
 To use continuous actions instead of discrete actions:
 
 ```python
 env = gym.make('MinecraftBasic-v0')
-env.configure(allowContinuousMovement=["move", "turn"])
+env.init(allowContinuousMovement=["move", "turn"])
 ```
 
 To use different video resolution:
 
 ```python
 env = gym.make('MinecraftBasic-v0')
-env.configure(videoResolution=[40, 30])
+env.init(videoResolution=[40, 30])
 ```
 
 More documentation about configuration options is in [wiki](https://github.com/tambetm/gym-minecraft/wiki/Configure).

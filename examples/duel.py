@@ -34,7 +34,7 @@ parser.add_argument('environment')
 args = parser.parse_args()
 
 env = gym.make(args.environment)
-env.configure(videoResolution=[40, 30], allowDiscreteMovement=["move", "turn"], log_level='INFO')
+env.unwrapped.init(videoResolution=[40, 30], allowDiscreteMovement=["move", "turn"], log_level='INFO')
 assert isinstance(env.observation_space, Box)
 assert isinstance(env.action_space, Discrete)
 
@@ -124,7 +124,7 @@ for i_episode in xrange(args.episodes):
             action = env.action_space.sample()
         else:
             s = np.array([observation])
-            q = model.predict(s, batch_size=1)
+            q = model.predict_on_batch(s)
             #print "q:", q
             action = np.argmax(q[0])
             maxqs.append(np.max(q[0]))
@@ -140,8 +140,8 @@ for i_episode in xrange(args.episodes):
         for k in xrange(args.train_repeat):
             prestates, actions, rewards, poststates, terminals = mem.sample(args.batch_size)
 
-            qpre = model.predict(prestates)
-            qpost = model.predict(poststates)
+            qpre = model.predict_on_batch(prestates)
+            qpost = target_model.predict_on_batch(poststates)
             for i in xrange(qpre.shape[0]):
                 if terminals[i]:
                     qpre[i, actions[i]] = rewards[i]

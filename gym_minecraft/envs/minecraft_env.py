@@ -16,6 +16,12 @@ except ImportError as e:
 
 logger = logging.getLogger(__name__)
 
+SINGLE_DIRECTION_DISCRETE_MOVEMENTS = [ "jumpeast", "jumpnorth", "jumpsouth", "jumpwest",
+                                        "movenorth", "moveeast", "movesouth", "movewest",
+                                        "jumpuse", "use", "attack", "jump" ]
+
+MULTIPLE_DIRECTION_DISCRETE_MOVEMENTS = [ "move", "turn", "look", "strafe",
+                                          "jumpmove", "jumpstrafe" ]
 
 class MinecraftEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
@@ -180,13 +186,11 @@ class MinecraftEnv(gym.Env):
                     else:
                         raise ValueError("Unknown continuous action " + cmd)
                 elif ch == "DiscreteMovement":
-                    if cmd in ["movenorth", "moveeast", "movesouth", "movewest"]:
+                    if cmd in SINGLE_DIRECTION_DISCRETE_MOVEMENTS:
                         discrete_actions.append(cmd + " 1")
-                    elif cmd in ["move", "turn", "look"]:
+                    elif cmd in MULTIPLE_DIRECTION_DISCRETE_MOVEMENTS:
                         discrete_actions.append(cmd + " 1")
                         discrete_actions.append(cmd + " -1")
-                    elif cmd in ["jump", "attack", "use"]:
-                        discrete_actions.append(cmd + " 1")
                     else:
                         raise ValueError(False, "Unknown discrete action " + cmd)
                 elif ch == "AbsoluteMovement":

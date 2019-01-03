@@ -182,7 +182,7 @@ class MinecraftEnv(gym.Env):
                             discrete_actions.append(cmd + " 0")
                         else:
                             multidiscrete_actions.append(cmd)
-                            multidiscrete_action_ranges.append([0, 1])
+                            multidiscrete_action_ranges.append(2)
                     else:
                         raise ValueError("Unknown continuous action " + cmd)
                 elif ch == "DiscreteMovement":

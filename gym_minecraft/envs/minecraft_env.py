@@ -182,7 +182,7 @@ class MinecraftEnv(gym.Env):
                             discrete_actions.append(cmd + " 0")
                         else:
                             multidiscrete_actions.append(cmd)
-                            multidiscrete_action_ranges.append([0, 1])
+                            multidiscrete_action_ranges.append(2)
                     else:
                         raise ValueError("Unknown continuous action " + cmd)
                 elif ch == "DiscreteMovement":
@@ -222,7 +222,7 @@ class MinecraftEnv(gym.Env):
             self.action_space = spaces.Tuple(self.action_spaces)
         logger.debug(self.action_space)
 
-    def _reset(self):
+    def reset(self):
         # force new world each time
         if self.forceWorldReset:
             self.mission_spec.forceWorldReset()
@@ -314,7 +314,7 @@ class MinecraftEnv(gym.Env):
         else:
             return None
 
-    def _step(self, action):
+    def step(self, action):
         # take the action only if mission is still running
         world_state = self.agent_host.peekWorldState()
         if world_state.is_mission_running:
@@ -356,7 +356,7 @@ class MinecraftEnv(gym.Env):
 
         return image, reward, done, info
 
-    def _render(self, mode='human', close=False):
+    def render(self, mode='human', close=False):
         if mode == 'rgb_array':
             return self.last_image
         elif mode == 'human':

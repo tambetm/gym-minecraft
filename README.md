@@ -1,5 +1,7 @@
 # Gym Minecraft
 
+**This project is outdated, please use [MalmoEnv](https://github.com/microsoft/malmo/tree/master/MalmoEnv) instead.**
+
 Gym Minecraft is an environment bundle for OpenAI Gym. It is based on [Microsoft's Malmö](https://github.com/Microsoft/malmo), which is a platform for Artificial Intelligence experimentation and research built on top of Minecraft.
 
 <table>
